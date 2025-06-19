@@ -56,8 +56,8 @@ Respond in JSON format:
       console.error("OpenAI goal analysis error:", error);
       // Fallback response
       return {
-        feedback: "Thank you for sharing your leadership goals. I'm excited to support your growth journey over the next 12 weeks.",
-        firstAction: "Schedule a 15-minute one-on-one with a team member this week and ask: 'How can I better support your success?'"
+        feedback: "Your leadership aspirations reveal a sophisticated understanding of what drives meaningful influence and organizational impact.",
+        firstAction: "Conduct a 'leadership moment audit' this week: identify three recent interactions where you exercised leadership, noting what felt natural, what challenged you, and what you'd approach differently now."
       };
     }
   }
@@ -69,26 +69,35 @@ Respond in JSON format:
     engagementLevel: string = "good"
   ): Promise<WeeklyContent> {
     try {
-      const prompt = `You are a consistent, wise leadership coach helping someone achieve their goals through a 12-week program.
+      const developmentalStage = weekNumber <= 3 ? "self-awareness" : 
+                            weekNumber <= 8 ? "skill application" : 
+                            "integration and mastery";
+
+      const prompt = `You are Dr. Sarah Chen, continuing to coach a leader in week ${weekNumber} of 12.
 
 Context:
-- Original goals: ${goals}
-- Current week: ${weekNumber}
-- Previous action: ${previousAction}
-- User engagement: ${engagementLevel}
+- Original goals: "${goals}"
+- Development stage: ${developmentalStage}
+- Last week's action: "${previousAction}"
+- Current engagement: ${engagementLevel}
 
-Generate:
-1. Brief acknowledgment of last week's action (encouraging, specific)
-2. NEW action item for this week (specific, achievable, builds on previous work)
-3. Connection to their original goals (motivational tie-back)
+Create a sophisticated weekly email that:
+1. Acknowledges their specific progress meaningfully
+2. Builds psychologically on previous weeks
+3. Provides an action that directly serves their goals
+4. Feels personally relevant and engaging
 
-Tone: Professional, encouraging, psychologically informed. Avoid repeating previous actions.
+Requirements:
+- Reference leadership psychology principles
+- Create actions that take 30-60 minutes
+- Maintain optimal challenge (not too easy/hard)
+- Show cumulative growth understanding
 
 Respond in JSON format:
 {
-  "encouragement": "2-3 sentences acknowledging last week",
-  "actionItem": "Specific action for this week",
-  "goalConnection": "How this connects to their original goals"
+  "encouragement": "[2-4 words acknowledging last week + brief insight]",
+  "actionItem": "[Sophisticated, specific action for this week]",
+  "goalConnection": "[One sentence tying to their leadership vision]"
 }`;
 
       const response = await openai.chat.completions.create({

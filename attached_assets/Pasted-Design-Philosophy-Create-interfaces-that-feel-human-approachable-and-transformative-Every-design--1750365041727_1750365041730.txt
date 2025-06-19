@@ -1,0 +1,173 @@
+Design Philosophy
+Create interfaces that feel human, approachable, and transformative. Every design decision should reinforce the idea that great leadership starts with understanding people.
+Visual Identity
+Color Palette
+css--bg-primary: #F5F0E8;    /* Warm beige background */
+--text-primary: #1A1A1A;  /* Near-black for text */
+--accent-yellow: #FFD60A; /* Bright yellow for energy */
+--accent-blue: #003566;   /* Deep blue for trust */
+--text-secondary: #4A4A4A; /* Softer gray for secondary text */
+--white: #FFFFFF;         /* Clean white for cards */
+Typography
+
+Primary Font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif
+Headings: Bold (700-900 weight), tight letter-spacing (-1px to -3px)
+Body: Regular (400 weight), generous line-height (1.6-1.8)
+Sizes: Use clamp() for responsive typography
+
+Hero: clamp(48px, 8vw, 80px)
+Section headers: clamp(40px, 6vw, 64px)
+Card headers: 32px-36px
+Body text: 18px-24px
+
+
+
+Layout Principles
+1. Three-Pillar Structure
+
+Divide key concepts into groups of three
+Use horizontal lines (3px black) to separate sections
+Equal visual weight for each pillar
+Clear hierarchy within each section
+
+2. Generous White Space
+
+Padding: 40px minimum on mobile, 60-120px on desktop
+Card padding: 40-60px
+Section spacing: 80-120px between major sections
+Let content breathe - avoid cramming
+
+3. Grid Systems
+
+Desktop: 3-column or 2-column grids
+Tablet: 2-column or single column
+Mobile: Always single column
+Gap spacing: 40-80px depending on context
+
+Interactive Elements
+Buttons
+css/* Primary Button */
+background: var(--text-primary);
+color: var(--bg-primary);
+padding: 18px 40px;
+border-radius: 30px;
+font-weight: 600;
+transition: all 0.3s ease;
+
+/* Hover State */
+transform: translateY(-3px);
+box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+Cards
+
+White background with subtle shadows
+Border radius: 20px
+Hover effect: lift and enhance shadow
+Optional: Top border animation on hover
+
+Navigation
+
+Fixed header with blur on scroll
+Minimal link styles with underline on hover
+CTA button stands out from other nav items
+
+Animation Guidelines
+Scroll-Triggered Animations
+css@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+Use Intersection Observer
+Stagger animations with 0.1-0.2s delays
+Keep animations subtle and purposeful
+
+Micro-Interactions
+
+Button hover: translateY(-3px)
+Card hover: translateY(-10px)
+Link hover: underline animation
+Loading states: skeleton screens
+
+Content Strategy
+Voice & Tone
+
+Confident but approachable: "Transform how you lead"
+Action-oriented: Use active verbs
+Human-centered: Focus on people, not features
+Encouraging: Emphasize growth and potential
+
+Information Hierarchy
+
+Hero Statement: One powerful, transformative message
+Supporting Context: Explain the why in 1-2 sentences
+Clear CTAs: Direct, action-oriented button text
+Feature Benefits: Lead with outcomes, not capabilities
+
+Component Patterns
+Hero Section
+
+Split layout: Content left, visual right (desktop)
+Stacked on mobile
+One primary CTA, one secondary
+Bold headline with optional accent
+
+Feature Cards
+
+Number or icon to anchor each card
+Clear heading (4-6 words)
+Descriptive text (2-3 sentences)
+Consistent padding and spacing
+
+Section Headers
+
+Centered alignment
+Large, bold heading
+Optional subheading for context
+80px margin bottom before content
+
+Responsive Design
+Breakpoints
+
+Mobile: < 768px
+Tablet: 768px - 1024px
+Desktop: > 1024px
+
+Mobile Considerations
+
+Increase touch targets (minimum 44px)
+Reduce padding proportionally
+Stack all content vertically
+Simplify navigation (hamburger menu)
+Maintain readability (16px minimum font size)
+
+Accessibility
+Core Requirements
+
+Color contrast: 4.5:1 for normal text, 3:1 for large text
+Keyboard navigation for all interactive elements
+Proper heading hierarchy (h1 → h2 → h3)
+Alt text for images
+ARIA labels where needed
+Focus indicators
+
+Best Practices
+
+Test with screen readers
+Ensure animations respect prefers-reduced-motion
+Provide text alternatives for visual information
+Use semantic HTML elements
+
+Design Principles Checklist
+✓ Is it human? Does the design feel warm and approachable?
+✓ Is it clear? Can users understand the value in 5 seconds?
+✓ Is it actionable? Are next steps obvious?
+✓ Is it delightful? Are there moments of joy in the interaction?
+✓ Is it accessible? Can everyone use it effectively?
+✓ Is it consistent? Do patterns repeat predictably?
+✓ Is it purposeful? Does every element serve a function?

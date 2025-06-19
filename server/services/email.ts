@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { User } from "@shared/schema";
 import { GoalAnalysis, WeeklyContent } from "./openai";
+import { EmailTemplates } from "./email-templates";
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -24,12 +25,12 @@ class EmailService {
       return;
     }
 
-    const subject = "Welcome to Your Leadership Journey!";
-    const html = this.generateWelcomeEmailHTML(user, goalAnalysis);
+    const subject = "Welcome to GO - Your Leadership Transformation Begins";
+    const html = EmailTemplates.generateWelcomeEmail(user, goalAnalysis);
 
     try {
       await this.transporter.sendMail({
-        from: `"Go Leadership" <${process.env.EMAIL_USER}>`,
+        from: `"Dr. Sarah Chen - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject,
         html,
@@ -51,13 +52,14 @@ class EmailService {
       return;
     }
 
-    const html = this.generateWeeklyEmailHTML(user, weekNumber, content);
+    const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content);
+    const enhancedSubject = EmailTemplates.generateSubjectLine(weekNumber, content.actionItem);
 
     try {
       await this.transporter.sendMail({
-        from: `"Go Leadership" <${process.env.EMAIL_USER}>`,
+        from: `"Dr. Sarah Chen - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
-        subject,
+        subject: enhancedSubject,
         html,
       });
       console.log(`Week ${weekNumber} email sent to ${user.email}`);
