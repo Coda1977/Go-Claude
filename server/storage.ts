@@ -1,6 +1,6 @@
 import { users, emailHistory, type User, type InsertUser, type EmailHistory, type InsertEmailHistory } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, lte, gte, desc } from "drizzle-orm";
+import { eq, and, lte, gte, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -126,6 +126,20 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .orderBy(desc(users.createdAt));
+  }
+
+  async trackEmailOpen(emailId: number): Promise<void> {
+    await db
+      .update(emailHistory)
+      .set({ openedAt: new Date() })
+      .where(eq(emailHistory.id, emailId));
+  }
+
+  async trackEmailClick(emailId: number): Promise<void> {
+    await db
+      .update(emailHistory)
+      .set({ clickCount: sql`COALESCE(${emailHistory.clickCount}, 0) + 1` })
+      .where(eq(emailHistory.id, emailId));
   }
 }
 

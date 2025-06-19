@@ -2,7 +2,7 @@ import { User } from "@shared/schema";
 import { GoalAnalysis, WeeklyContent } from "./openai";
 
 export class EmailTemplates {
-  static generateWelcomeEmail(user: User, goalAnalysis: GoalAnalysis): string {
+  static generateWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): string {
     const firstName = user.email.split('@')[0].split('.')[0];
     const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 

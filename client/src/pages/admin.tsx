@@ -1,147 +1,128 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminDashboard } from "@/components/admin-dashboard";
-import { ArrowLeft, X } from "lucide-react";
+import { Shield, Mail } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/api";
 
 export default function Admin() {
-  const [, setLocation] = useLocation();
+  const [email, setEmail] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleBackToHome = () => {
-    setLocation("/");
-  };
+  // Check if already authenticated on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await apiRequest("/api/admin/stats", "GET");
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      await apiRequest("POST", "/api/admin/login", { password });
+  const loginMutation = useMutation({
+    mutationFn: async (email: string) => {
+      return await apiRequest("/api/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+    onSuccess: () => {
       setIsAuthenticated(true);
       toast({
-        title: "Login successful",
-        description: "Welcome to the admin dashboard",
+        title: "Welcome back!",
+        description: "Admin access granted successfully",
       });
-    } catch (error) {
+    },
+    onError: (error: any) => {
       toast({
-        title: "Login failed",
-        description: "Invalid password",
+        title: "Access Denied",
+        description: "Only authorized administrators can access this dashboard",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      loginMutation.mutate(email.trim());
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await apiRequest("POST", "/api/admin/logout");
-      setIsAuthenticated(false);
-      setPassword("");
-      toast({
-        title: "Logged out",
-        description: "You have been logged out successfully",
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-go-neutral-50 flex items-center justify-center">
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-md w-full mx-4">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-2xl font-bold">Admin Access</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBackToHome}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="admin-password">Password</Label>
-                  <Input
-                    id="admin-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="mt-2"
-                    placeholder="Enter admin password"
-                  />
-                </div>
-                <div className="flex space-x-4">
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 go-button-primary"
-                  >
-                    {isLoading ? "Logging in..." : "Login"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleBackToHome}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="card text-center">
+          <div className="w-8 h-8 mx-auto mb-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+          <p className="text-body">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToHome}
-                className="text-go-neutral-500 hover:text-go-neutral-700"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-              <h1 className="text-xl font-bold">Go Leadership - Admin Dashboard</h1>
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <Card className="w-full max-w-md card">
+          <CardHeader className="text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent-blue)' }}>
+              <Shield className="w-8 h-8 text-white" />
             </div>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="text-go-neutral-500 hover:text-go-neutral-700"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
+            <div>
+              <CardTitle className="text-card">Admin Access</CardTitle>
+              <p className="text-body mt-2">
+                Restricted to authorized administrators only
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your admin email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={loginMutation.isPending || !email.trim()}
+                className="btn-primary w-full"
+              >
+                {loginMutation.isPending ? "Verifying Access..." : "Access Dashboard"}
+              </Button>
+            </form>
+            <div className="mt-6 text-center">
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                This dashboard provides comprehensive analytics and user management for the Go Leadership platform
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
 
-      <AdminDashboard />
-    </div>
-  );
+  return <AdminDashboard />;
 }
