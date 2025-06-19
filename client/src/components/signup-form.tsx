@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,9 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 const signupSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
   timezone: z.string().min(1, "Please select your timezone"),
   goals: z.string().min(10, "Please describe your leadership goals (at least 10 characters)"),
 });
@@ -37,6 +37,12 @@ export function SignupForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Check user authentication status
+  const { data: userInfo, isLoading: isLoadingUser } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
   const {
     register,
     handleSubmit,
@@ -46,7 +52,6 @@ export function SignupForm() {
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      email: "",
       timezone: "",
       goals: "",
     },

@@ -46,15 +46,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User signup endpoint
+  // Get current user info (from Replit context)
+  app.get("/api/user", async (req, res) => {
+    try {
+      // In Replit, user info is available via headers
+      const replitUser = req.headers['x-replit-user-name'];
+      const userEmail = req.headers['x-replit-user-email'] || `${replitUser}@replit.com`;
+      
+      if (!replitUser) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // Check if user exists in our system
+      const existingUser = await storage.getUserByEmail(userEmail as string);
+      
+      res.json({ 
+        authenticated: true,
+        email: userEmail,
+        username: replitUser,
+        isRegistered: !!existingUser,
+        user: existingUser || null
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User signup endpoint (simplified - uses Replit auth)
   app.post("/api/signup", signupLimiter, async (req, res) => {
     try {
-      const validatedData = insertUserSchema.parse(req.body);
+      const { timezone, goals } = req.body;
+      
+      // Get user info from Replit context
+      const replitUser = req.headers['x-replit-user-name'];
+      const userEmail = req.headers['x-replit-user-email'] || `${replitUser}@replit.com`;
+      
+      if (!replitUser) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      // Validate input (email comes from Replit auth)
+      const validatedData = insertUserSchema.parse({ 
+        email: userEmail, 
+        timezone, 
+        goals 
+      });
       
       // Check if user already exists
-      const existingUser = await storage.getUserByEmail(validatedData.email);
+      const existingUser = await storage.getUserByEmail(userEmail as string);
       if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
+        return res.status(400).json({ message: "User already registered" });
       }
 
       // Create user
@@ -76,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actionItem: goalAnalysis.firstAction,
       });
 
-      res.json({ message: "Signup successful", userId: user.id });
+      res.json({ message: "Registration successful", userId: user.id });
     } catch (error) {
       console.error("Signup error:", error);
       if (error instanceof z.ZodError) {
