@@ -148,7 +148,7 @@ export default function Home() {
             </p>
           </div>
           <div className="max-w-xl mx-auto">
-            <div className="card">
+            <div className="card" style={{ overflow: 'visible', position: 'relative', zIndex: 1 }}>
               <SignupForm />
             </div>
           </div>

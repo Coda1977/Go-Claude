@@ -156,6 +156,17 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
   }
 
+  /* Fix for dropdown overlapping issues */
+  .card:has([data-radix-select-trigger]) {
+    overflow: visible;
+    z-index: auto;
+  }
+
+  /* Ensure select dropdowns appear above everything */
+  [data-radix-select-content] {
+    z-index: 9999 !important;
+  }
+
   /* Section Spacing */
   .section {
     padding: 80px 0;
