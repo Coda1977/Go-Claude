@@ -52,6 +52,7 @@ interface EmailRecord {
 export function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithEmailData | null>(null);
+  const [activeTab, setActiveTab] = useState("users");
 
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -182,7 +183,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="users" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -281,7 +282,10 @@ export function AdminDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedUser(user)}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setActiveTab("analytics");
+                          }}
                           className="text-xs"
                         >
                           View Details
@@ -319,7 +323,10 @@ export function AdminDashboard() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => setSelectedUser(null)}
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setActiveTab("users");
+                    }}
                   >
                     Back to Users
                   </Button>
