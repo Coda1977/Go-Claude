@@ -1,0 +1,356 @@
+# Go Leadership App - Complete System Prompt for Replit
+
+Create a sophisticated 12-week leadership follow-through app called "Go" that sends personalized AI-generated emails to help users achieve their leadership goals.
+
+## Technical Stack & Requirements
+- **Platform**: Replit with Node.js/Express
+- **Database**: PostgreSQL (use Replit's built-in PostgreSQL 15)
+- **AI**: OpenAI GPT-4 API
+- **Email**: Nodemailer with Gmail SMTP
+- **Scheduling**: node-cron for weekly email automation
+- **Security**: Helmet, express-rate-limit, input validation
+- **Frontend**: Clean HTML/CSS/JavaScript (no frameworks)
+
+## Core Application Structure
+
+### 1. Package.json Dependencies
+```json
+{
+  "name": "go-leadership-app",
+  "version": "1.0.0",
+  "description": "A 12-week leadership follow-through app that sends personalized AI-generated emails",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup": "node setup-script.js",
+    "test": "node test-file.js",
+    "migrate": "node migrations/migrate.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "openai": "^4.28.0",
+    "nodemailer": "^6.9.8",
+    "node-cron": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+```
+
+### 2. Database Schema (PostgreSQL)
+```sql
+-- Users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  timezone VARCHAR(100) NOT NULL,
+  goals TEXT NOT NULL,
+  signup_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  current_week INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  last_email_sent TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Email history table
+CREATE TABLE email_history (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  week_number INTEGER NOT NULL,
+  subject TEXT,
+  content TEXT,
+  action_item TEXT,
+  sent_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  delivery_status VARCHAR(50) DEFAULT 'sent',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 3. Environment Variables (.env)
+```env
+# PostgreSQL Database (provided by Replit)
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
+
+# OpenAI API
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Email Configuration (Gmail SMTP)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your_app_password_here
+
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Admin Access
+ADMIN_PASSWORD=secure_admin_password
+
+# Optional: Custom SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+```
+
+## Core Application Files to Create
+
+### 4. Main Server (server.js)
+Create a secure Express server with:
+- Security middleware (helmet, rate limiting)
+- Input validation and sanitization
+- RESTful API endpoints for user management
+- Admin dashboard with authentication
+- Error handling and logging
+- Graceful shutdown handlers
+- Health check endpoints
+
+**Key Routes:**
+- `POST /signup` - User registration with email/goals/timezone
+- `GET /admin` - Admin dashboard (password protected)
+- `GET /api/users` - List all users (admin only)
+- `GET /api/stats` - App statistics
+- `POST /api/test-email` - Send test email
+- `POST /cron/weekly-emails` - Manual email trigger
+- `GET /health` - Health check endpoint
+
+### 5. Database Module (database.js)
+PostgreSQL integration with connection pooling:
+- Database initialization and table creation
+- User CRUD operations with prepared statements
+- Email history logging
+- Statistics and analytics queries
+- Connection health monitoring
+- Proper error handling and connection cleanup
+
+**Key Functions:**
+- `initDatabase()` - Initialize database and tables
+- `createUser(email, timezone, goals)` - Create new user
+- `getUsersNeedingEmails()` - Get users ready for next email
+- `updateUserWeek(userId, week, actionItem)` - Update user progress
+- `logEmailHistory(userId, week, subject, content, action)` - Log email sends
+- `getStats()` - Get application statistics
+
+### 6. AI Service (aiService.js)
+Sophisticated OpenAI integration:
+- Goal analysis for welcome emails
+- Weekly email content generation with psychological depth
+- Dynamic subject line generation
+- Context-aware prompts that improve over time
+- Engagement assessment and adaptation
+
+**AI Prompts:**
+```javascript
+// Goal Analysis Prompt
+const GOAL_ANALYSIS_PROMPT = `You are an expert leadership coach with deep experience in behavioral psychology and adult development. 
+
+Analyze these leadership goals and provide:
+1. Constructive, encouraging feedback (2-3 sentences)
+2. ONE specific, actionable item for week 1 that begins their leadership journey
+
+Goals: {USER_GOALS}
+
+Respond in JSON format:
+{
+  "feedback": "Your analysis here",
+  "firstAction": "Specific week 1 action"
+}`;
+
+// Weekly Email Generation Prompt
+const WEEKLY_EMAIL_PROMPT = `You are a consistent, wise leadership coach helping someone achieve their goals through a 12-week program.
+
+Context:
+- Original goals: {USER_GOALS}
+- Current week: {WEEK_NUMBER}
+- Previous action: {PREVIOUS_ACTION}
+- User engagement: {ENGAGEMENT_LEVEL}
+- Progress pattern: {PROGRESS_PATTERN}
+
+Generate:
+1. Brief acknowledgment of last week's action (encouraging, specific)
+2. NEW action item for this week (specific, achievable, builds on previous work)
+3. Connection to their original goals (motivational tie-back)
+
+Tone: Professional, encouraging, psychologically informed. Avoid repeating previous actions.
+
+Respond in JSON format:
+{
+  "encouragement": "2-3 sentences acknowledging last week",
+  "actionItem": "Specific action for this week",
+  "goalConnection": "How this connects to their original goals"
+}`;
+```
+
+### 7. Email Service (emailService.js)
+Professional email system with:
+- Gmail SMTP configuration with proper authentication
+- HTML email templates with responsive design
+- Welcome email automation (immediate after signup)
+- Weekly email sending with retry logic
+- Email delivery status tracking
+- Template system for consistent branding
+
+**Email Templates:**
+- Welcome email with goal analysis and week 1 action
+- Weekly coaching emails with progress tracking
+- Professional HTML design with leadership branding
+
+### 8. Scheduler (scheduler.js)
+Intelligent scheduling system:
+- Timezone-aware email scheduling (Monday 9am local time)
+- User engagement assessment and adaptation
+- Batch processing for efficiency
+- Error handling and retry logic
+- Sophisticated user progress tracking
+
+**Key Features:**
+- `scheduleWeeklyEmails()` - Set up cron job for Monday 9am
+- `processWeeklyEmails()` - Process all users needing emails
+- `shouldSendWeeklyEmail(user, now)` - Intelligent send logic
+- `getUserLocalTime(date, timezone)` - Timezone conversion
+- Progress tracking and engagement analysis
+
+### 9. Database Migrations (migrations/migrate.js)
+Complete migration system:
+- Up/down migration support
+- Sample data creation
+- Migration status tracking
+- Database reset functionality
+- PostgreSQL-specific optimizations
+
+### 10. Setup Script (setup-script.js)
+Interactive setup automation:
+- Environment variable configuration
+- Directory structure creation
+- Dependency installation verification
+- Database connection testing
+- Configuration validation
+
+### 11. Test Suite (test-file.js)
+Comprehensive testing:
+- Database connection and query testing
+- AI service functionality verification
+- Email delivery testing
+- System health checks
+- Performance monitoring
+
+## Frontend Files
+
+### 12. Landing Page (public/index.html)
+Clean, conversion-focused design:
+- Leadership-focused messaging and branding
+- Simple signup form (email, goals, timezone auto-detection)
+- Professional styling with trust indicators
+- Mobile-responsive design
+- Form validation and user feedback
+
+### 13. Admin Dashboard (public/admin.html)
+Comprehensive admin interface:
+- User management (view, edit, deactivate)
+- Email scheduling and manual triggers
+- System statistics and health monitoring
+- Test tools for email and AI services
+- Activity logs and error monitoring
+
+### 14. Success Page (public/success.html)
+Post-signup confirmation:
+- Welcome message and expectation setting
+- Email delivery information
+- Program overview and timeline
+- Contact information and support
+
+### 15. Styling (public/style.css)
+Professional leadership branding:
+- Clean, modern design language
+- Consistent color scheme and typography
+- Responsive grid system
+- Professional form styling
+- Dashboard UI components
+
+### 16. Frontend JavaScript (public/script.js)
+Enhanced user experience:
+- Form validation and submission
+- Timezone auto-detection
+- Dynamic UI updates
+- Admin dashboard functionality
+- Real-time status updates
+
+## Email Templates
+
+### 17. Welcome Email (templates/welcome.html)
+Professional HTML email template:
+- Personalized greeting and goal acknowledgment
+- AI-generated feedback on their goals
+- Week 1 action item with clear instructions
+- Program overview and expectations
+- Professional branding and styling
+
+### 18. Weekly Email (templates/weekly.html)
+Sophisticated coaching email template:
+- Previous week acknowledgment
+- New action item presentation
+- Goal connection and motivation
+- Progress tracking visualization
+- Consistent leadership coaching tone
+
+## Advanced Features to Implement
+
+### AI Sophistication
+- Context-aware content generation
+- User engagement assessment
+- Progressive difficulty adjustment
+- Psychological depth in action items
+- Learning from user interaction patterns
+
+### Email Intelligence
+- Dynamic send time optimization
+- Engagement tracking and adaptation
+- Personalized subject lines
+- A/B testing capabilities
+- Delivery optimization
+
+### Analytics and Monitoring
+- User engagement metrics
+- Email delivery analytics
+- Goal achievement tracking
+- System performance monitoring
+- Error reporting and alerting
+
+### Security and Scalability
+- Input validation and sanitization
+- Rate limiting and abuse prevention
+- Database connection pooling
+- Error handling and logging
+- Graceful degradation
+
+## User Flow
+
+1. **Landing**: User visits homepage, sees leadership development promise
+2. **Signup**: Enters email and leadership goals, timezone auto-detected
+3. **Welcome**: Receives immediate AI-analyzed welcome email with week 1 action
+4. **Weekly Cycle**: Every Monday 9am local time, receives personalized coaching email
+5. **Progress**: 12-week journey with increasingly sophisticated action items
+6. **Completion**: Program completion with goal achievement assessment
+
+## Admin Features
+
+1. **User Management**: View all users, their progress, and engagement levels
+2. **Email Control**: Manual email triggers, scheduling adjustments
+3. **System Monitoring**: Health checks, error logs, performance metrics
+4. **Content Testing**: Test AI generation, email delivery, scheduling logic
+5. **Analytics**: User statistics, email performance, goal achievement rates
+
+## Success Metrics
+
+- Email delivery rate > 98%
+- User engagement throughout 12 weeks
+- Goal achievement self-reporting
+- System uptime and performance
+- AI content quality and relevance
+
+This system creates a professional, scalable leadership development application that combines AI sophistication with reliable email automation, providing genuine value to users pursuing leadership growth.
