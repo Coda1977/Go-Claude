@@ -106,7 +106,10 @@ export function SignupForm() {
 
       <div className="space-y-2">
         <Label htmlFor="timezone">Timezone</Label>
-        <Select value={selectedTimezone} onValueChange={(value) => setValue("timezone", value)}>
+        <Select value={selectedTimezone} onValueChange={(value) => {
+          setValue("timezone", value);
+          setValue("timezone", value, { shouldValidate: true });
+        }}>
           <SelectTrigger className={errors.timezone ? "border-red-500" : ""}>
             <SelectValue placeholder="Select your timezone" />
           </SelectTrigger>
