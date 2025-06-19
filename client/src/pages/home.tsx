@@ -97,9 +97,6 @@ export default function Home() {
                 <a href="#signup" className="btn-primary">
                   Start Your Journey
                 </a>
-                <a href="#how-it-works" className="btn-secondary">
-                  See How It Works
-                </a>
               </div>
             </div>
             <div className="fade-in-up" style={{ animationDelay: '0.2s' }}>
@@ -144,7 +141,7 @@ export default function Home() {
       <section id="signup" className="section-large bg-white">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center mb-12">
-            <h2 className="text-section mb-6">Ready to Lead with Confidence?</h2>
+            <h2 className="text-section mb-6">Ready to Go?</h2>
             <div className="section-divider"></div>
             <p className="text-body">
               Join leaders who've transformed their impact through personalized AI coaching
