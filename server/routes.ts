@@ -22,8 +22,19 @@ const adminLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Security headers
-  app.use(helmet());
+  // Security headers with CSP configuration for development
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        connectSrc: ["'self'", "ws:", "wss:"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  }));
 
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
