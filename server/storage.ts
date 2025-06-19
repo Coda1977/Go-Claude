@@ -1,6 +1,7 @@
 import { users, emailHistory, type User, type InsertUser, type EmailHistory, type InsertEmailHistory } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, lte, gte, desc, sql } from "drizzle-orm";
+import { users as usersTable } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -17,6 +18,7 @@ export interface IStorage {
   logEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory>;
   getEmailHistory(userId: number): Promise<EmailHistory[]>;
   getAllUsers(): Promise<User[]>;
+  deleteUser(id: number): Promise<boolean>;
   trackEmailOpen(emailId: number): Promise<void>;
   trackEmailClick(emailId: number): Promise<void>;
 }
@@ -133,6 +135,16 @@ export class DatabaseStorage implements IStorage {
       .update(emailHistory)
       .set({ openedAt: new Date() })
       .where(eq(emailHistory.id, emailId));
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
 
   async trackEmailClick(emailId: number): Promise<void> {

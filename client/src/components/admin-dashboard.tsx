@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,12 @@ import {
   Search,
   Calendar,
   Target,
-  BarChart3
+  BarChart3,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
+import { apiRequest } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
   totalUsers: number;
@@ -53,6 +56,8 @@ export function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithEmailData | null>(null);
   const [activeTab, setActiveTab] = useState("users");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
