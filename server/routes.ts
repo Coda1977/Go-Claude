@@ -201,7 +201,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/email/track/:emailId", async (req, res) => {
     try {
       const emailId = parseInt(req.params.emailId);
+      console.log(`Email tracking pixel requested for email ID: ${emailId}`);
+      
+      if (isNaN(emailId)) {
+        console.error("Invalid email ID provided:", req.params.emailId);
+        return res.status(400).send("Invalid email ID");
+      }
+      
       await storage.trackEmailOpen(emailId);
+      console.log(`Email open tracked successfully for email ID: ${emailId}`);
       
       // Return 1x1 transparent pixel
       const pixel = Buffer.from(
@@ -209,6 +217,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "base64"
       );
       res.set("Content-Type", "image/png");
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
       res.send(pixel);
     } catch (error) {
       console.error("Email tracking error:", error);

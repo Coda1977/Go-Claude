@@ -33,7 +33,7 @@ class Scheduler {
 
       for (const user of users) {
         try {
-          const nextWeek = user.currentWeek + 1;
+          const nextWeek = (user.currentWeek || 0) + 1;
           
           // Skip if user has completed the program
           if (nextWeek > 12) {

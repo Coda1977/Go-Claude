@@ -131,10 +131,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async trackEmailOpen(emailId: number): Promise<void> {
-    await db
-      .update(emailHistory)
-      .set({ openedAt: new Date() })
-      .where(eq(emailHistory.id, emailId));
+    console.log(`Attempting to track email open for ID: ${emailId}`);
+    try {
+      const result = await db
+        .update(emailHistory)
+        .set({ openedAt: new Date() })
+        .where(eq(emailHistory.id, emailId))
+        .returning();
+      
+      if (result.length === 0) {
+        console.warn(`No email record found for ID: ${emailId}`);
+      } else {
+        console.log(`Successfully updated email open for ID: ${emailId}`, result[0]);
+      }
+    } catch (error) {
+      console.error(`Error tracking email open for ID ${emailId}:`, error);
+      throw error;
+    }
   }
 
   async deleteUser(id: number): Promise<boolean> {
