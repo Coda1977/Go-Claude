@@ -137,16 +137,16 @@ export function SignupForm() {
         )}
       </div>
 
-      <Button
+      <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full go-button-primary font-semibold py-3 shadow-lg hover:shadow-xl transition-all"
+        className="btn-primary w-full"
       >
         {isSubmitting ? "Starting Your Journey..." : "Start My Leadership Journey"}
-      </Button>
+      </button>
 
-      <p className="text-sm text-go-neutral-500 text-center">
-        You'll receive your personalized coaching content
+      <p className="text-sm text-center" style={{ color: 'var(--text-secondary)' }}>
+        You'll receive your personalized coaching content every Monday
       </p>
     </form>
   );
