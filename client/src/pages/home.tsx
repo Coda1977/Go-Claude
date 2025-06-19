@@ -1,10 +1,26 @@
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SignupForm } from "@/components/signup-form";
 import { CheckCircle, ArrowRight, Users, Target, Lightbulb } from "lucide-react";
+import { apiRequest } from "@/lib/api";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if current user has admin privileges
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        await apiRequest("GET", "/api/admin/stats");
+        setIsAdmin(true);
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, []);
 
   const handleAdminClick = () => {
     setLocation("/admin");
@@ -75,12 +91,14 @@ export default function Home() {
           <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             GO
           </div>
-          <Button 
-            onClick={handleAdminClick}
-            className="btn-secondary"
-          >
-            Admin Dashboard
-          </Button>
+          {isAdmin && (
+            <Button 
+              onClick={handleAdminClick}
+              className="btn-secondary"
+            >
+              Admin Dashboard
+            </Button>
+          )}
         </div>
       </nav>
       {/* Hero Section */}

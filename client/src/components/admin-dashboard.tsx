@@ -78,6 +78,39 @@ export function AdminDashboard() {
     return Math.round((openedEmails / emailHistory.length) * 100);
   };
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest("DELETE", `/api/admin/users/${userId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted",
+        description: "User has been permanently removed from the system",
+      });
+      // Refresh the users list
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      // Clear selected user if it was deleted
+      if (selectedUser) {
+        setSelectedUser(null);
+        setActiveTab("users");
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed", 
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteUser = (user: UserWithEmailData) => {
+    if (confirm(`Are you sure you want to permanently delete ${user.email}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(user.id);
+    }
+  };
+
   const getStatusBadge = (user: UserWithEmailData) => {
     if (!user.isActive) return <Badge variant="destructive">Inactive</Badge>;
     if (user.currentWeek >= 12) return <Badge className="bg-green-500">Completed</Badge>;
@@ -284,17 +317,28 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setActiveTab("analytics");
-                          }}
-                          className="text-xs"
-                        >
-                          View Details
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setActiveTab("analytics");
+                            }}
+                            className="text-xs"
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={deleteUserMutation.isPending}
+                            className="text-xs"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
