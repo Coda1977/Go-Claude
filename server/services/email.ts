@@ -18,6 +18,12 @@ class EmailService {
   }
 
   async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis): Promise<void> {
+    // Skip email sending in development if credentials not configured
+    if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
+      console.log(`Email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
+      return;
+    }
+
     const subject = "Welcome to Your Leadership Journey!";
     const html = this.generateWelcomeEmailHTML(user, goalAnalysis);
 
@@ -31,11 +37,20 @@ class EmailService {
       console.log(`Welcome email sent to ${user.email}`);
     } catch (error) {
       console.error("Failed to send welcome email:", error);
-      throw error;
+      // Don't throw error in development to allow signup to complete
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
   }
 
   async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string): Promise<void> {
+    // Skip email sending in development if credentials not configured
+    if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
+      console.log(`Weekly email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
+      return;
+    }
+
     const html = this.generateWeeklyEmailHTML(user, weekNumber, content);
 
     try {
@@ -48,7 +63,10 @@ class EmailService {
       console.log(`Week ${weekNumber} email sent to ${user.email}`);
     } catch (error) {
       console.error(`Failed to send week ${weekNumber} email:`, error);
-      throw error;
+      // Don't throw error in development to allow process to continue
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
   }
 
