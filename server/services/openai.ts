@@ -19,32 +19,38 @@ export interface WeeklyContent {
 class OpenAIService {
   async analyzeGoals(goals: string): Promise<GoalAnalysis> {
     try {
-      const prompt = `You are an expert leadership coach with deep experience in behavioral psychology and adult development.
+      const prompt = `You are Dr. Sarah Chen, a renowned executive coach with 20+ years working with Fortune 500 leaders.
 
-Analyze these leadership goals and provide:
-1. Constructive, encouraging feedback (2-3 sentences)
-2. ONE specific, actionable item for week 1 that begins their leadership journey
+ANALYZE THESE LEADERSHIP GOALS:
+"${goals}"
 
-Goals: ${goals}
+Provide deep psychological insights about what's driving these goals and create a sophisticated first action that builds meaningful momentum.
+
+Requirements:
+- Reference specific elements from their goals
+- Show genuine understanding of leadership psychology
+- Create a specific, engaging action (not generic advice)
+- Write warmly but professionally
+- Action should take 30-60 minutes
 
 Respond in JSON format:
 {
-  "feedback": "Your analysis here",
-  "firstAction": "Specific week 1 action"
+  "feedback": "[2-3 sentences of nuanced psychological analysis]",
+  "firstAction": "[Specific, meaningful week 1 action that directly serves their goals]"
 }`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        max_tokens: 500,
+        max_tokens: 600,
       });
 
       const result = JSON.parse(response.choices[0].message.content || "{}");
       
       return {
-        feedback: result.feedback || "Thank you for sharing your leadership goals. Let's start your journey with actionable steps.",
-        firstAction: result.firstAction || "Schedule a 15-minute conversation with a team member to discuss how you can better support their success."
+        feedback: result.feedback || "Your leadership aspirations reveal a sophisticated understanding of what drives meaningful influence and organizational impact.",
+        firstAction: result.firstAction || "Conduct a 'leadership moment audit' this week: identify three recent interactions where you exercised leadership, noting what felt natural, what challenged you, and what you'd approach differently now."
       };
     } catch (error) {
       console.error("OpenAI goal analysis error:", error);
