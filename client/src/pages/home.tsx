@@ -224,7 +224,7 @@ export default function Home() {
                   {/* Footer */}
                   <div className="border-t pt-4 text-center">
                     <p className="text-sm text-gray-500">
-                      Best regards,<br>
+                      Best regards,<br />
                       <strong>Your AI Leadership Coach</strong>
                     </p>
                   </div>

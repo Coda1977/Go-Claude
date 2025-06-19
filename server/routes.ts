@@ -31,7 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getStats();
       res.json({ status: "healthy", stats });
     } catch (error) {
-      res.status(500).json({ status: "unhealthy", error: error.message });
+      res.status(500).json({ status: "unhealthy", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
       
       if (password === adminPassword) {
-        req.session.isAdmin = true;
+        (req.session as any).isAdmin = true;
         res.json({ message: "Login successful" });
       } else {
         res.status(401).json({ message: "Invalid password" });
@@ -93,8 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin middleware
-  const requireAdmin = (req, res, next) => {
-    if (!req.session.isAdmin) {
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.session?.isAdmin) {
       return res.status(401).json({ message: "Admin access required" });
     }
     next();
@@ -157,8 +157,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Logout endpoint
   app.post("/api/admin/logout", (req, res) => {
-    req.session.destroy();
-    res.json({ message: "Logged out successfully" });
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Session destroy error:', err);
+      }
+      res.json({ message: "Logged out successfully" });
+    });
   });
 
   // Initialize scheduler
