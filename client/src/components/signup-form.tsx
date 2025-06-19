@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 
 const signupSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
   timezone: z.string().min(1, "Please select your timezone"),
   goals: z.string().min(10, "Please describe your leadership goals (at least 10 characters)"),
 });
@@ -37,12 +38,6 @@ export function SignupForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Check user authentication status
-  const { data: userInfo, isLoading: isLoadingUser } = useQuery({
-    queryKey: ["/api/user"],
-    retry: false,
-  });
-
   const {
     register,
     handleSubmit,
@@ -58,13 +53,13 @@ export function SignupForm() {
   });
 
   // Auto-detect timezone on component mount
-  useState(() => {
+  useEffect(() => {
     const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const matchingTimezone = timezones.find(tz => tz.value === detectedTimezone);
     if (matchingTimezone) {
       setValue("timezone", detectedTimezone);
     }
-  });
+  }, [setValue]);
 
   const selectedTimezone = watch("timezone");
 
@@ -76,15 +71,15 @@ export function SignupForm() {
       
       toast({
         title: "Welcome to Go Leadership!",
-        description: "Check your email for your personalized welcome message.",
+        description: "Your personalized coaching journey has begun!",
       });
       
       // Redirect to success page
       setLocation("/success");
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Signup failed",
-        description: error.message || "An error occurred during signup. Please try again.",
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -94,19 +89,6 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email Address</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="your@email.com"
-          {...register("email")}
-          className={errors.email ? "border-red-500" : ""}
-        />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
-        )}
-      </div>
 
       <div className="space-y-2">
         <Label htmlFor="timezone">Timezone</Label>
@@ -150,7 +132,7 @@ export function SignupForm() {
       </Button>
 
       <p className="text-sm text-go-neutral-500 text-center">
-        You'll receive your first personalized email within minutes
+        You'll receive your personalized coaching content
       </p>
     </form>
   );
