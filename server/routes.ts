@@ -112,26 +112,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin authentication endpoint
+  // Admin authentication endpoint - email-based access
   app.post("/api/admin/login", adminLimiter, async (req, res) => {
     try {
-      const { password } = req.body;
-      const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+      const { email } = req.body;
       
-      if (password === adminPassword) {
+      if (email === "tinymanagerai@gmail.com") {
         (req.session as any).isAdmin = true;
-        res.json({ message: "Login successful" });
+        (req.session as any).userEmail = email;
+        res.json({ message: "Admin access granted", isAdmin: true });
       } else {
-        res.status(401).json({ message: "Invalid password" });
+        res.status(401).json({ message: "Admin access denied" });
       }
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
   });
 
-  // Admin middleware
+  // Admin middleware - restrict to specific email
   const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.session?.isAdmin) {
+    const userEmail = req.session?.userEmail;
+    if (userEmail !== "tinymanagerai@gmail.com") {
       return res.status(401).json({ message: "Admin access required" });
     }
     next();
@@ -150,7 +151,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      res.json(users);
+      // Get email history for each user
+      const usersWithEmailData = await Promise.all(
+        users.map(async (user) => {
+          const emailHistory = await storage.getEmailHistory(user.id);
+          return {
+            ...user,
+            emailsSent: emailHistory.length,
+            lastEmailSent: emailHistory.length > 0 ? emailHistory[emailHistory.length - 1].sentDate : null,
+            emailHistory
+          };
+        })
+      );
+      res.json(usersWithEmailData);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }
@@ -166,6 +179,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "User deactivated", user });
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Email tracking routes
+  app.get("/api/email/track/:emailId", async (req, res) => {
+    try {
+      const emailId = parseInt(req.params.emailId);
+      await storage.trackEmailOpen(emailId);
+      
+      // Return 1x1 transparent pixel
+      const pixel = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "base64"
+      );
+      res.set("Content-Type", "image/png");
+      res.send(pixel);
+    } catch (error) {
+      console.error("Email tracking error:", error);
+      res.status(500).send("Error");
+    }
+  });
+
+  app.get("/api/email/click/:emailId", async (req, res) => {
+    try {
+      const emailId = parseInt(req.params.emailId);
+      await storage.trackEmailClick(emailId);
+      
+      const redirectUrl = req.query.url as string || "/";
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error("Click tracking error:", error);
+      res.redirect("/");
     }
   });
 

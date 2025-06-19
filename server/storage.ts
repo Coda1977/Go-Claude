@@ -17,6 +17,8 @@ export interface IStorage {
   logEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory>;
   getEmailHistory(userId: number): Promise<EmailHistory[]>;
   getAllUsers(): Promise<User[]>;
+  trackEmailOpen(emailId: number): Promise<void>;
+  trackEmailClick(emailId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

@@ -25,6 +25,8 @@ export const emailHistory = pgTable("email_history", {
   actionItem: text("action_item"),
   sentDate: timestamp("sent_date").defaultNow(),
   deliveryStatus: text("delivery_status").default("sent"),
+  openedAt: timestamp("opened_at"),
+  clickCount: integer("click_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
