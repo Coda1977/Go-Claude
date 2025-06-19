@@ -92,7 +92,7 @@ export default function Home() {
                 Transform How You 
                 <span className="accent-yellow"> Lead</span>
               </h1>
-              <p className="text-body mb-12">Get personalized AI coaching that turns your decisions into actions.</p>
+              <p className="text-body mb-12">Get personalized AI coaching that turns your intentions into actions.</p>
               <div className="flex flex-col sm:flex-row gap-6">
                 <a href="#signup" className="btn-primary">
                   Start Your Journey
@@ -111,30 +111,6 @@ export default function Home() {
                 <p className="text-body">Personalized coaching delivered weekly</p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-      {/* Three Pillars Section */}
-      <section className="section">
-        <div className="container">
-          <div className="text-center mb-20">
-            <h2 className="text-section mb-6">Master the Three Pillars of Leadership</h2>
-            <div className="section-divider"></div>
-          </div>
-          <div className="grid-3">
-            {features.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <div key={index} className="card fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex items-center mb-6">
-                    <span className="text-4xl font-bold mr-4 accent-blue">{feature.number}</span>
-                    <IconComponent className="w-8 h-8 accent-blue" />
-                  </div>
-                  <h3 className="text-card mb-4">{feature.title}</h3>
-                  <p className="text-body">{feature.description}</p>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>
@@ -159,33 +135,6 @@ export default function Home() {
                 {index < steps.length - 1 && (
                   <ArrowRight className="w-6 h-6 mx-auto mt-8 accent-blue hidden lg:block" />
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* Social Proof */}
-      <section className="section">
-        <div className="container">
-          <div className="text-center mb-20">
-            <h2 className="text-section mb-6">Leaders Who've Transformed</h2>
-            <div className="section-divider"></div>
-          </div>
-          <div className="grid-3">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="card fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="mb-6">
-                  <div className="flex mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <CheckCircle key={i} className="w-5 h-5 accent-yellow mr-1" />
-                    ))}
-                  </div>
-                  <p className="text-body italic mb-6">"{testimonial.quote}"</p>
-                </div>
-                <div>
-                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{testimonial.author}</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{testimonial.role}</p>
-                </div>
               </div>
             ))}
           </div>
