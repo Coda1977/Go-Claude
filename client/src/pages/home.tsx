@@ -83,7 +83,6 @@ export default function Home() {
           </Button>
         </div>
       </nav>
-
       {/* Hero Section */}
       <section className="section-large pt-32">
         <div className="container">
@@ -93,9 +92,7 @@ export default function Home() {
                 Transform How You 
                 <span className="accent-yellow"> Lead</span>
               </h1>
-              <p className="text-body mb-12">
-                Great leadership starts with understanding people. Get personalized AI coaching that turns leadership psychology into practical skills you can use immediately.
-              </p>
+              <p className="text-body mb-12">Get personalized AI coaching that turns your decisions into actions.</p>
               <div className="flex flex-col sm:flex-row gap-6">
                 <a href="#signup" className="btn-primary">
                   Start Your Journey
@@ -117,7 +114,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Three Pillars Section */}
       <section className="section">
         <div className="container">
@@ -142,7 +138,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* How It Works */}
       <section id="how-it-works" className="section bg-white">
         <div className="container">
@@ -169,7 +164,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Social Proof */}
       <section className="section">
         <div className="container">
@@ -197,7 +191,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Signup Section */}
       <section id="signup" className="section-large bg-white">
         <div className="container">
@@ -215,7 +208,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="section text-center">
         <div className="container">
