@@ -89,18 +89,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate welcome email with AI analysis
       const goalAnalysis = await openaiService.analyzeGoals(validatedData.goals);
       
-      // Send welcome email
-      await emailService.sendWelcomeEmail(user, goalAnalysis);
-
-      // Update user's current week to 1 and log email
-      await storage.updateUser(user.id, { currentWeek: 1, lastEmailSent: new Date() });
-      await storage.logEmailHistory({
+      // Log email first to get the email ID for tracking
+      const emailRecord = await storage.logEmailHistory({
         userId: user.id,
         weekNumber: 1,
         subject: "Welcome to Your Leadership Journey!",
         content: goalAnalysis.feedback,
         actionItem: goalAnalysis.firstAction,
       });
+      
+      // Send welcome email with tracking pixel
+      await emailService.sendWelcomeEmail(user, goalAnalysis, emailRecord.id);
+
+      // Update user's current week to 1
+      await storage.updateUser(user.id, { currentWeek: 1, lastEmailSent: new Date() });
 
       res.json({ message: "Signup successful", userId: user.id });
     } catch (error) {

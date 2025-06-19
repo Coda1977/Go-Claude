@@ -18,7 +18,7 @@ class EmailService {
     });
   }
 
-  async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis): Promise<void> {
+  async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): Promise<void> {
     // Skip email sending in development if credentials not configured
     if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
       console.log(`Email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
@@ -26,7 +26,7 @@ class EmailService {
     }
 
     const subject = "Welcome to GO - Your Leadership Transformation Begins";
-    const html = EmailTemplates.generateWelcomeEmail(user, goalAnalysis);
+    const html = EmailTemplates.generateWelcomeEmail(user, goalAnalysis, emailId);
 
     try {
       await this.transporter.sendMail({
@@ -35,7 +35,7 @@ class EmailService {
         subject,
         html,
       });
-      console.log(`Welcome email sent to ${user.email}`);
+      console.log(`Welcome email sent to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''}`);
     } catch (error) {
       console.error("Failed to send welcome email:", error);
       // Don't throw error in development to allow signup to complete
@@ -45,24 +45,23 @@ class EmailService {
     }
   }
 
-  async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string): Promise<void> {
+  async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string, emailId?: number): Promise<void> {
     // Skip email sending in development if credentials not configured
     if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
       console.log(`Weekly email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
       return;
     }
 
-    const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content);
-    const enhancedSubject = EmailTemplates.generateSubjectLine(weekNumber, content.actionItem);
+    const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content, emailId);
 
     try {
       await this.transporter.sendMail({
         from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
-        subject: enhancedSubject,
+        subject,
         html,
       });
-      console.log(`Week ${weekNumber} email sent to ${user.email}`);
+      console.log(`Week ${weekNumber} email sent to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''}`);
     } catch (error) {
       console.error(`Failed to send week ${weekNumber} email:`, error);
       // Don't throw error in development to allow process to continue

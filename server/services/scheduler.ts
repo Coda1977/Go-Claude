@@ -54,22 +54,22 @@ class Scheduler {
           // Generate subject line
           const subject = await openaiService.generateSubjectLine(nextWeek, weeklyContent.actionItem);
 
-          // Send email
-          await emailService.sendWeeklyEmail(user, nextWeek, weeklyContent, subject);
-
-          // Update user progress
-          await storage.updateUser(user.id, {
-            currentWeek: nextWeek,
-            lastEmailSent: new Date(),
-          });
-
-          // Log email history
-          await storage.logEmailHistory({
+          // Log email history first to get tracking ID
+          const emailRecord = await storage.logEmailHistory({
             userId: user.id,
             weekNumber: nextWeek,
             subject,
             content: `${weeklyContent.encouragement}\n\n${weeklyContent.goalConnection}`,
             actionItem: weeklyContent.actionItem,
+          });
+
+          // Send email with tracking ID
+          await emailService.sendWeeklyEmail(user, nextWeek, weeklyContent, subject, emailRecord.id);
+
+          // Update user progress
+          await storage.updateUser(user.id, {
+            currentWeek: nextWeek,
+            lastEmailSent: new Date(),
           });
 
           processed++;
