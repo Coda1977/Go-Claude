@@ -47,6 +47,7 @@ export function SignupForm() {
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
+      email: "",
       timezone: "",
       goals: "",
     },
@@ -89,6 +90,19 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email Address</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="your@email.com"
+          {...register("email")}
+          className={errors.email ? "border-red-500" : ""}
+        />
+        {errors.email && (
+          <p className="text-sm text-red-500">{errors.email.message}</p>
+        )}
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="timezone">Timezone</Label>

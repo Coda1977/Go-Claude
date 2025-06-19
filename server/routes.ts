@@ -72,30 +72,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User signup endpoint (simplified - uses Replit auth)
+  // User signup endpoint
   app.post("/api/signup", signupLimiter, async (req, res) => {
     try {
-      const { timezone, goals } = req.body;
-      
-      // Get user info from Replit context
-      const replitUser = req.headers['x-replit-user-name'];
-      const userEmail = req.headers['x-replit-user-email'] || `${replitUser}@replit.com`;
-      
-      if (!replitUser) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
-      
-      // Validate input (email comes from Replit auth)
-      const validatedData = insertUserSchema.parse({ 
-        email: userEmail, 
-        timezone, 
-        goals 
-      });
+      const validatedData = insertUserSchema.parse(req.body);
       
       // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userEmail as string);
+      const existingUser = await storage.getUserByEmail(validatedData.email);
       if (existingUser) {
-        return res.status(400).json({ message: "User already registered" });
+        return res.status(400).json({ message: "User already exists" });
       }
 
       // Create user
@@ -117,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actionItem: goalAnalysis.firstAction,
       });
 
-      res.json({ message: "Registration successful", userId: user.id });
+      res.json({ message: "Signup successful", userId: user.id });
     } catch (error) {
       console.error("Signup error:", error);
       if (error instanceof z.ZodError) {
