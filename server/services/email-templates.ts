@@ -63,8 +63,8 @@ export class EmailTemplates {
               <!-- Signature -->
               <div style="margin: 40px 0 20px 0; padding: 20px 0; border-top: 1px solid #ecf0f1;">
                 <p style="margin: 0 0 5px 0; color: #2c3e50; font-family: Georgia, serif; font-size: 16px;">Looking forward to your transformation,</p>
-                <p style="margin: 0; color: #3498db; font-family: Georgia, serif; font-size: 18px; font-weight: bold;">Dr. Sarah Chen</p>
-                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-style: italic;">Executive Leadership Coach</p>
+                <p style="margin: 0; color: #3498db; font-family: Georgia, serif; font-size: 18px; font-weight: bold;">Go Coach</p>
+                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-style: italic;">Your AI Leadership Coach</p>
               </div>
             </div>
             
@@ -142,8 +142,8 @@ export class EmailTemplates {
               <!-- Signature -->
               <div style="margin: 40px 0 20px 0; padding: 20px 0; border-top: 1px solid #ecf0f1;">
                 <p style="margin: 0 0 5px 0; color: #2c3e50; font-family: Georgia, serif; font-size: 16px;">Continuing your growth journey,</p>
-                <p style="margin: 0; color: #3498db; font-family: Georgia, serif; font-size: 18px; font-weight: bold;">Dr. Sarah Chen</p>
-                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-style: italic;">Executive Leadership Coach</p>
+                <p style="margin: 0; color: #3498db; font-family: Georgia, serif; font-size: 18px; font-weight: bold;">Go Coach</p>
+                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-style: italic;">Your AI Leadership Coach</p>
               </div>
             </div>
             

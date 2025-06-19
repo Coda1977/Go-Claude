@@ -30,7 +30,7 @@ class EmailService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Dr. Sarah Chen - GO Leadership" <${process.env.EMAIL_USER}>`,
+        from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject,
         html,
@@ -57,7 +57,7 @@ class EmailService {
 
     try {
       await this.transporter.sendMail({
-        from: `"Dr. Sarah Chen - GO Leadership" <${process.env.EMAIL_USER}>`,
+        from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject: enhancedSubject,
         html,
