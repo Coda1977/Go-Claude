@@ -5,6 +5,7 @@ export class EmailTemplates {
   static generateWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): string {
     const firstName = user.email.split('@')[0].split('.')[0];
     const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    const trackingPixel = emailId ? `<img src="${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/api/email/track/${emailId}" width="1" height="1" style="display:none;" alt="" />` : '';
 
     return `
       <!DOCTYPE html>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminDashboard } from "@/components/admin-dashboard";
 import { Shield, Mail } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Admin() {
@@ -18,7 +18,7 @@ export default function Admin() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await apiRequest("/api/admin/stats", "GET");
+        await apiRequest("GET", "/api/admin/stats");
         setIsAuthenticated(true);
       } catch (error) {
         setIsAuthenticated(false);
@@ -31,11 +31,7 @@ export default function Admin() {
 
   const loginMutation = useMutation({
     mutationFn: async (email: string) => {
-      return await apiRequest("/api/admin/login", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-        headers: { "Content-Type": "application/json" },
-      });
+      return await apiRequest("POST", "/api/admin/login", { email });
     },
     onSuccess: () => {
       setIsAuthenticated(true);
