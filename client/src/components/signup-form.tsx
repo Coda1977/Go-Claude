@@ -27,6 +27,7 @@ const timezones = [
   { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
   { value: "Europe/London", label: "GMT (London)" },
   { value: "Europe/Paris", label: "CET (Paris)" },
+  { value: "Asia/Jerusalem", label: "IST (Jerusalem)" },
   { value: "Asia/Tokyo", label: "JST (Tokyo)" },
   { value: "Australia/Sydney", label: "AEST (Sydney)" },
   { value: "America/Toronto", label: "EST (Toronto)" },
