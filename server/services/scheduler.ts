@@ -49,7 +49,7 @@ class Scheduler {
           }
 
           // Validate user has goals (required for AI generation)
-          if (!user.goals || user.goals.trim().length === 0) {
+          if (!user.goals || !Array.isArray(user.goals) || user.goals.length === 0) {
             console.error(`User ${user.id} has no goals set, skipping email`);
             continue;
           }
@@ -85,7 +85,7 @@ class Scheduler {
       // Get previous email to build context
       const emailHistory = await storage.getEmailHistory(user.id);
       const previousAction = emailHistory.length > 0 
-        ? emailHistory[0].actionItem 
+        ? (emailHistory[0].actionItem || "Starting your leadership journey")
         : "Starting your leadership journey";
 
       // Calculate engagement level based on email analytics
@@ -93,9 +93,9 @@ class Scheduler {
 
       // Generate weekly content with AI
       const weeklyContent = await openaiService.generateWeeklyContent(
-        user.goals,
+        user.goals.join('\n'),
         weekNumber,
-        previousAction,
+        previousAction || "Starting your leadership journey",
         engagementLevel
       );
 

@@ -107,8 +107,8 @@ export default function Home() {
           <div className="grid-2 items-center">
             <div className="fade-in-up">
               <h1 className="text-hero mb-8" style={{ color: 'var(--text-primary)' }}>
-                Transform How You 
-                <span className="accent-yellow"> Lead</span>
+                Turn your intentions into 
+                <span className="accent-yellow"> Impact</span>
               </h1>
               <p className="text-body mb-12">Get personalized AI coaching that turns your intentions into actions.</p>
               <div className="flex flex-col sm:flex-row gap-6">
