@@ -50,7 +50,7 @@ export default function Home() {
   const steps = [
     {
       number: 1,
-      title: "Share Your Vision",
+      title: "Set Your Goals",
       description: "Tell us about your leadership aspirations and the impact you want to create",
     },
     {
