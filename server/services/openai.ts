@@ -41,7 +41,10 @@ interface EnhancedWeeklyContent {
 }
 
 class OpenAIService {
-  async analyzeGoals(goals: string[]): Promise<GoalAnalysis> {
+  async analyzeGoals(goals: string[], retryCount = 0): Promise<GoalAnalysis> {
+    const maxRetries = 3;
+    const retryDelay = 1000 * Math.pow(2, retryCount); // Exponential backoff
+    
     try {
       const prompt = `You are Go Coach, an expert leadership development specialist.
 
@@ -113,15 +116,17 @@ EXAMPLE OUTPUT:
         }))
       };
     } catch (error) {
-      console.error("OpenAI goal analysis error:", error);
-      // Fallback response
-      return {
-        feedback: "Your leadership aspirations reveal a sophisticated understanding of what drives meaningful influence and organizational impact.",
-        goalActions: goals.map(goal => ({
-          goal,
-          action: "Conduct a focused 30-minute reflection on this goal: identify one recent situation where progress toward this goal was possible, noting what worked, what didn't, and one specific action you can take this week."
-        }))
-      };
+      console.error(`OpenAI goal analysis error (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+      
+      // Retry logic with exponential backoff
+      if (retryCount < maxRetries) {
+        console.log(`Retrying OpenAI analysis in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.analyzeGoals(goals, retryCount + 1);
+      }
+      
+      // If all retries failed, throw the error to be handled upstream
+      throw new Error(`OpenAI service failed after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

@@ -18,56 +18,76 @@ class EmailService {
     });
   }
 
-  async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): Promise<void> {
+  async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): Promise<boolean> {
     // Skip email sending in development if credentials not configured
     if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
       console.log(`Email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
-      return;
+      return false;
     }
 
     const subject = "Welcome to GO - Your Leadership Transformation Begins";
     const html = EmailTemplates.generateWelcomeEmail(user, goalAnalysis, emailId);
 
     try {
-      await this.transporter.sendMail({
+      // Verify transporter before sending
+      const verified = await this.transporter.verify();
+      if (!verified) {
+        throw new Error("Email transporter verification failed");
+      }
+
+      const info = await this.transporter.sendMail({
         from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject,
         html,
       });
-      console.log(`Welcome email sent to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''}`);
+
+      // Verify the message was accepted
+      if (info.rejected && info.rejected.length > 0) {
+        throw new Error(`Email rejected: ${info.rejected.join(', ')}`);
+      }
+
+      console.log(`Welcome email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Message ID: ${info.messageId}`);
+      return true;
     } catch (error) {
       console.error("Failed to send welcome email:", error);
-      // Don't throw error in development to allow signup to complete
-      if (process.env.NODE_ENV === 'production') {
-        throw error;
-      }
+      throw error; // Always throw to ensure proper error handling upstream
     }
   }
 
-  async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string, emailId?: number): Promise<void> {
+  async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string, emailId?: number): Promise<boolean> {
     // Skip email sending in development if credentials not configured
     if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
       console.log(`Weekly email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
-      return;
+      return false;
     }
 
     const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content, emailId);
 
     try {
-      await this.transporter.sendMail({
+      // Verify transporter before sending
+      const verified = await this.transporter.verify();
+      if (!verified) {
+        throw new Error("Email transporter verification failed");
+      }
+
+      const info = await this.transporter.sendMail({
         from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject,
         html,
       });
-      console.log(`Week ${weekNumber} email sent to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''}`);
+
+      // Verify the message was accepted
+      if (info.rejected && info.rejected.length > 0) {
+        throw new Error(`Email rejected: ${info.rejected.join(', ')}`);
+      }
+
+      console.log(`Week ${weekNumber} email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Message ID: ${info.messageId}`);
+      return true;
     } catch (error) {
       console.error(`Failed to send week ${weekNumber} email:`, error);
-      // Don't throw error in development to allow process to continue
-      if (process.env.NODE_ENV === 'production') {
-        throw error;
-      }
+      throw error; // Always throw to ensure proper error handling upstream
     }
   }
 
@@ -137,10 +157,15 @@ class EmailService {
             
             <!-- Action Item Box -->
             <div style="background-color: #eff6ff; border-left: 4px solid #2563EB; padding: 20px; border-radius: 8px; margin: 30px 0;">
-              <h3 style="color: #2563EB; font-size: 18px; font-weight: 600; margin: 0 0 12px 0;">Your Week 1 Action Item:</h3>
-              <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0;">
-                ${goalAnalysis.firstAction}
-              </p>
+              <h3 style="color: #2563EB; font-size: 18px; font-weight: 600; margin: 0 0 12px 0;">Your Week 1 Action Items:</h3>
+              <div style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0;">
+                ${goalAnalysis.goalActions.map((ga, index) => `
+                  <div style="margin-bottom: ${index < goalAnalysis.goalActions.length - 1 ? '16px' : '0'};">
+                    <strong style="color: #2563EB;">${ga.goal}:</strong><br>
+                    ${ga.action}
+                  </div>
+                `).join('')}
+              </div>
             </div>
             
             <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 30px 0 20px 0;">
