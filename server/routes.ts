@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
 import { openaiService } from "./services/openai";
 import { emailService } from "./services/email";
+import { emailQueue } from "./services/email-queue";
 import { scheduler } from "./services/scheduler";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";

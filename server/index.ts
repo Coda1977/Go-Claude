@@ -3,6 +3,30 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Environment validation on startup
+function validateEnvironment() {
+  const requiredEnvVars = [
+    'DATABASE_URL',
+    'OPENAI_API_KEY', 
+    'EMAIL_USER',
+    'EMAIL_PASSWORD',
+    'SESSION_SECRET'
+  ];
+  
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error(`[STARTUP ERROR] Missing required environment variables: ${missingVars.join(', ')}`);
+    console.error('Application cannot start without these variables.');
+    process.exit(1);
+  }
+  
+  console.log(`[STARTUP] Environment validation passed. ${requiredEnvVars.length} variables configured.`);
+}
+
+// Validate environment before starting server
+validateEnvironment();
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -30,7 +54,6 @@ app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   const method = req.method;
-  const userAgent = req.get('User-Agent') || 'unknown';
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
   
   // Skip logging for health checks and static assets
