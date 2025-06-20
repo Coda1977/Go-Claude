@@ -2,6 +2,67 @@ import { User } from "@shared/schema";
 import { GoalAnalysis, WeeklyContent } from "./openai";
 
 export class EmailTemplates {
+  // Helper method to format analysis text with enhanced readability
+  static formatAnalysisText(text: string): string {
+    // Split long text into shorter paragraphs for better readability
+    const sentences = text.split(/\.\s+/);
+    const paragraphs = [];
+    let currentParagraph = [];
+
+    for (const sentence of sentences) {
+      currentParagraph.push(sentence);
+      // Create new paragraph every 2-3 sentences
+      if (currentParagraph.length >= 2 && (sentence.length > 100 || currentParagraph.length >= 3)) {
+        paragraphs.push(currentParagraph.join('. ') + (sentence.endsWith('.') ? '' : '.'));
+        currentParagraph = [];
+      }
+    }
+
+    // Add remaining sentences
+    if (currentParagraph.length > 0) {
+      paragraphs.push(currentParagraph.join('. ') + (currentParagraph[currentParagraph.length - 1].endsWith('.') ? '' : '.'));
+    }
+
+    return paragraphs.map(p => `<p style="margin: 0 0 12px 0;">${p}</p>`).join('');
+  }
+
+  // Helper method to format action text with step-by-step structure
+  static formatActionText(text: string): string {
+    // Look for time allocations, steps, or numbered items to format better
+    const lines = text.split(/\.\s+/);
+    const formattedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (!line.endsWith('.') && i < lines.length - 1) {
+        line += '.';
+      }
+
+      // Check if line contains time allocation or step indicator
+      if (line.match(/\d+\s*minutes?|\d+\s*min|step|begin|follow|conclude/i)) {
+        formattedLines.push(`<div style="margin: 8px 0; padding-left: 12px; border-left: 2px solid #FFD60A;"><strong>${line}</strong></div>`);
+      } else {
+        formattedLines.push(`<p style="margin: 8px 0 0 0;">${line}</p>`);
+      }
+    }
+
+    return formattedLines.join('');
+  }
+
+  // Helper method to format multiple goal actions
+  static formatGoalActions(goalActions: Array<{goal: string; action: string}>): string {
+    return goalActions.map((ga, index) => `
+      <div style="margin-bottom: ${index < goalActions.length - 1 ? '24px' : '0'};">
+        <div style="background: #FFFFFF; padding: 16px; border-radius: 6px; border-left: 3px solid #003566; margin-bottom: 12px;">
+          <h4 style="margin: 0 0 8px 0; color: #003566; font-size: 16px; font-weight: 600;">Goal ${index + 1}: ${ga.goal}</h4>
+        </div>
+        <div style="color: #1A1A1A; font-size: 15px; line-height: 1.6; padding-left: 8px;">
+          ${EmailTemplates.formatActionText(ga.action)}
+        </div>
+      </div>
+    `).join('');
+  }
+
   static generateWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): string {
     const firstName = user.email.split('@')[0].split('.')[0];
     const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
@@ -90,55 +151,6 @@ export class EmailTemplates {
     `;
   }
 
-  // Helper method to format analysis text with better paragraph breaks
-  static formatAnalysisText(text: string): string {
-    // Split long text into shorter paragraphs for better readability
-    const sentences = text.split(/\.\s+/);
-    const paragraphs = [];
-    let currentParagraph = [];
-
-    for (const sentence of sentences) {
-      currentParagraph.push(sentence);
-      // Create new paragraph every 2-3 sentences
-      if (currentParagraph.length >= 2 && (sentence.length > 100 || currentParagraph.length >= 3)) {
-        paragraphs.push(currentParagraph.join('. ') + (sentence.endsWith('.') ? '' : '.'));
-        currentParagraph = [];
-      }
-    }
-
-    // Add remaining sentences
-    if (currentParagraph.length > 0) {
-      paragraphs.push(currentParagraph.join('. ') + (currentParagraph[currentParagraph.length - 1].endsWith('.') ? '' : '.'));
-    }
-
-    return paragraphs.map(p => `<p style="margin: 0 0 12px 0;">${p}</p>`).join('');
-  }
-
-  // Helper method to format action text with step-by-step structure
-  static formatActionText(text: string): string {
-    // Look for time allocations, steps, or numbered items to format better
-    const lines = text.split(/\.\s+/);
-    const formattedLines = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
-      if (!line.endsWith('.') && i < lines.length - 1) {
-        line += '.';
-      }
-
-      // Check if line contains time allocation or step indicator
-      if (line.match(/\d+\s*minutes?|\d+\s*min|step|begin|follow|conclude/i)) {
-        formattedLines.push(`<div style="margin: 8px 0; padding-left: 12px; border-left: 2px solid #FFD60A;"><strong>${line}</strong></div>`);
-      } else {
-        formattedLines.push(`<p style="margin: 8px 0 0 0;">${line}</p>`);
-      }
-    }
-
-    return formattedLines.join('');
-  }
-
-
-
   static generateWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, emailId?: number): string {
     const firstName = user.email.split('@')[0].split('.')[0];
     const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
@@ -201,7 +213,7 @@ export class EmailTemplates {
 
           <!-- Clean signature -->
           <div style="margin: 40px 0 0 0; padding: 24px 0; border-top: 2px solid #F5F0E8; text-align: center;">
-            <p style="margin: 0 0 8px 0; color: #4A4A4A; font-size: 16px;">Continuing your growth journey,</p>
+            <p style="margin: 0 0 8px 0; color: #4A4A4A; font-size: 16px;">Keep pushing forward,</p>
             <p style="margin: 0 0 4px 0; color: #003566; font-size: 20px; font-weight: 600;">Go Coach</p>
             <p style="margin: 0; color: #4A4A4A; font-size: 14px;">Your AI Leadership Coach</p>
           </div>
@@ -211,7 +223,7 @@ export class EmailTemplates {
         <div style="padding: 30px; background: #F5F0E8; text-align: center;">
           <div style="display: inline-block; padding: 8px 16px; background: #FFFFFF; border-radius: 16px; margin-bottom: 12px;">
             <p style="margin: 0; color: #003566; font-size: 14px; font-weight: 600;">
-              Week ${weekNumber} of 12 • Your personalized leadership journey
+              Week ${weekNumber} of 12 • Your leadership development continues
             </p>
           </div>
           <p style="margin: 0; color: #4A4A4A; font-size: 12px;">
