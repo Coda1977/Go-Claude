@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SignupForm } from "@/components/signup-form";
 import { CheckCircle, ArrowRight, Users, Target, Lightbulb } from "lucide-react";
+import { GiRunningShoe } from "react-icons/gi";
 import { apiRequest } from "@/lib/api";
 
 export default function Home() {
@@ -120,10 +121,11 @@ export default function Home() {
             <div className="fade-in-up" style={{ animationDelay: '0.2s' }}>
               <div className="card text-center">
                 <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent-yellow)' }}>
-                  <Target className="w-8 h-8" style={{ color: 'var(--text-primary)' }} />
+                  <GiRunningShoe className="w-8 h-8" style={{ color: 'var(--text-primary)' }} />
                 </div>
-                <h3 className="text-card mb-4">12 Weeks to Leadership Mastery</h3>
-                <p className="text-body">Personalized coaching delivered weekly</p>
+                <blockquote className="text-lg italic font-serif mb-4" style={{ color: 'var(--text-primary)', fontFamily: 'Georgia, serif', lineHeight: '1.6' }}>
+                  "Action may not always bring happiness, but there is no happiness without action."
+                </blockquote>
               </div>
             </div>
           </div>
