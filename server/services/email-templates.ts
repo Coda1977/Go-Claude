@@ -50,12 +50,10 @@ export class EmailTemplates {
             </div>
           </div>
 
-          <!-- Modern action box -->
+          <!-- Goal Actions Section -->
           <div style="background: #F5F0E8; border-left: 4px solid #FFD60A; padding: 24px; border-radius: 8px; margin: 32px 0;">
-            <h3 style="color: #003566; font-size: 20px; font-weight: 600; margin: 0 0 16px 0;">🎯 Your First Action</h3>
-            <div style="color: #1A1A1A; font-size: 16px; line-height: 1.6;">
-              ${EmailTemplates.formatActionText(goalAnalysis.firstAction)}
-            </div>
+            <h3 style="color: #003566; font-size: 20px; font-weight: 600; margin: 0 0 16px 0;">🎯 Your Action Steps</h3>
+            ${EmailTemplates.formatGoalActions(goalAnalysis.goalActions)}
           </div>
 
           <!-- Journey continuation message -->
@@ -138,6 +136,8 @@ export class EmailTemplates {
 
     return formattedLines.join('');
   }
+
+
 
   static generateWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, emailId?: number): string {
     const firstName = user.email.split('@')[0].split('.')[0];
