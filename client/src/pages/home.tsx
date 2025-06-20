@@ -180,9 +180,7 @@ export default function Home() {
           <div className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
             GO
           </div>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Transform how you lead, starting today.
-          </p>
+          <p style={{ color: 'var(--text-secondary)' }}>Turning Intentions to Impact</p>
         </div>
       </footer>
     </div>
