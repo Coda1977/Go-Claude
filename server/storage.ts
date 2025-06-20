@@ -53,19 +53,34 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersNeedingEmails(): Promise<User[]> {
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    return await db
+    // Get users who should receive emails based on their timezone
+    const usersInTimeWindow = await db
       .select()
       .from(users)
       .where(
         and(
           eq(users.isActive, true),
-          lte(users.currentWeek, 11), // 0-11 for 12 weeks
-          // Either never sent an email or last email was over a week ago
-          // This is a simplified check - in production, we'd want timezone-aware scheduling
+          lte(users.currentWeek, 12), // Fixed: 1-12 weeks instead of 0-11
+          // User hasn't completed the program
+          gte(users.currentWeek, 0)
         )
       );
+
+    // Filter users based on timezone and prevent duplicates
+    const eligibleUsers = [];
+    
+    for (const user of usersInTimeWindow) {
+      // Check if it's Monday 9 AM in user's timezone
+      if (await this.isUserTimeWindow(user, now)) {
+        // Check if user hasn't received email this week
+        if (await this.shouldReceiveEmailThisWeek(user, now)) {
+          eligibleUsers.push(user);
+        }
+      }
+    }
+    
+    return eligibleUsers;
   }
 
   async getStats(): Promise<{
@@ -123,6 +138,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(emailHistory.sentDate));
   }
 
+  async getUserCurrentWeek(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    if (!user) return 0;
+    
+    // Ensure currentWeek is between 0-12
+    const currentWeek = user.currentWeek || 0;
+    return Math.max(0, Math.min(12, currentWeek));
+  }
+
   async getAllUsers(): Promise<User[]> {
     return await db
       .select()
@@ -165,6 +189,48 @@ export class DatabaseStorage implements IStorage {
       .update(emailHistory)
       .set({ clickCount: sql`COALESCE(${emailHistory.clickCount}, 0) + 1` })
       .where(eq(emailHistory.id, emailId));
+  }
+
+  // Add this new method for timezone checking
+  private async isUserTimeWindow(user: User, now: Date): Promise<boolean> {
+    try {
+      // Convert current time to user's timezone
+      const userTime = new Date(now.toLocaleString("en-US", { timeZone: user.timezone }));
+      const dayOfWeek = userTime.getDay(); // 0 = Sunday, 1 = Monday
+      const hour = userTime.getHours();
+      
+      // Check if it's Monday (1) and between 9-10 AM in user's timezone
+      return dayOfWeek === 1 && hour === 9;
+    } catch (error) {
+      console.error(`Invalid timezone for user ${user.id}: ${user.timezone}`, error);
+      // Fallback to server time if timezone is invalid
+      return now.getDay() === 1 && now.getHours() === 9;
+    }
+  }
+
+  // Add this method to prevent duplicate emails
+  private async shouldReceiveEmailThisWeek(user: User, now: Date): Promise<boolean> {
+    // Get start of current week (Monday)
+    const startOfWeek = new Date(now);
+    const daysSinceMonday = (now.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+    startOfWeek.setDate(now.getDate() - daysSinceMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Check if user received email this week
+    const recentEmails = await db
+      .select()
+      .from(emailHistory)
+      .where(
+        and(
+          eq(emailHistory.userId, user.id),
+          gte(emailHistory.sentDate, startOfWeek)
+        )
+      );
+    
+    // Also check lastEmailSent for additional safety
+    const lastEmailThisWeek = user.lastEmailSent && user.lastEmailSent >= startOfWeek;
+    
+    return recentEmails.length === 0 && !lastEmailThisWeek;
   }
 }
 
