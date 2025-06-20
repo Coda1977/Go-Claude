@@ -25,15 +25,20 @@ class EmailService {
       return false;
     }
 
-    const subject = "Welcome to GO - Your Leadership Transformation Begins";
+    const subject = "Welcome to Your Leadership Journey";
     const html = EmailTemplates.generateWelcomeEmail(user, goalAnalysis, emailId);
 
     try {
+      console.log(`Attempting to send welcome email to ${user.email}...`);
+      
       // Verify transporter before sending
       const verified = await this.transporter.verify();
       if (!verified) {
+        console.error("SMTP transporter verification failed - check email credentials");
         throw new Error("Email transporter verification failed");
       }
+      
+      console.log("SMTP transporter verified successfully");
 
       const info = await this.transporter.sendMail({
         from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
