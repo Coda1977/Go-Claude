@@ -89,6 +89,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('[SHUTDOWN] Received SIGTERM signal, shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('[SHUTDOWN] Received SIGINT signal, shutting down gracefully...');
+  process.exit(0);
+});
+
 (async () => {
   const server = await registerRoutes(app);
 

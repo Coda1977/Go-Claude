@@ -122,45 +122,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user
       const user = await storage.createUser(validatedData);
 
-      try {
-        // Generate welcome email with AI analysis
-        const goalAnalysis = await openaiService.analyzeGoals(validatedData.goals);
-        
-        // First attempt to send email - don't log until successful
-        const emailSent = await emailService.sendWelcomeEmail(user, goalAnalysis);
-        
-        if (emailSent) {
-          // Only log email record after successful delivery
-          const emailRecord = await storage.logEmailHistory({
-            userId: user.id,
-            weekNumber: 1,
-            subject: "Welcome to GO - Your Leadership Transformation Begins",
-            content: goalAnalysis.feedback,
-            actionItem: goalAnalysis.goalActions.map(ga => `${ga.goal}: ${ga.action}`).join('\n\n'),
-          });
-
-          // Update user's current week to 1 only after successful email
-          await storage.updateUser(user.id, { currentWeek: 1, lastEmailSent: new Date() });
-          
-          console.log(`User ${user.id} signup completed successfully with welcome email sent`);
-        } else {
-          console.log(`User ${user.id} signup completed but email was skipped (development mode)`);
-        }
-
-        res.json({ message: "Signup successful", userId: user.id });
-      } catch (emailError) {
-        console.error(`Email delivery failed for user ${user.id}:`, emailError);
-        
-        // User signup was successful but email failed - still return success
-        // but log the issue for monitoring
-        await storage.updateUser(user.id, { currentWeek: 0 }); // Keep at week 0 until email succeeds
-        
-        res.json({ 
-          message: "Signup successful - welcome email will be delivered shortly", 
-          userId: user.id,
-          emailStatus: "pending"
-        });
-      }
+      // Queue welcome email for async processing
+      emailQueue.addWelcomeEmail(user);
+      
+      // Update user to week 1 immediately 
+      await storage.updateUser(user.id, { currentWeek: 1 });
+      
+      console.log(`User ${user.id} signup completed successfully - welcome email queued for processing`);
+      res.json({ message: "Signup successful", userId: user.id });
     } catch (error) {
       console.error("Signup error:", error);
       if (error instanceof z.ZodError) {
@@ -327,6 +296,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Email queue status endpoint for monitoring
+  app.get('/api/admin/email-queue', requireAdmin, (req, res) => {
+    const status = emailQueue.getQueueStatus();
+    res.json(status);
   });
 
   // Initialize scheduler
