@@ -26,10 +26,13 @@ class EmailQueue {
   private processingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    // Process queue every 5 seconds
+    // Process queue every 2 seconds for faster processing
     this.processingInterval = setInterval(() => {
       this.processQueue();
-    }, 5000);
+    }, 2000);
+    
+    // Process immediately on startup
+    setTimeout(() => this.processQueue(), 500);
   }
 
   addWelcomeEmail(user: User): void {
