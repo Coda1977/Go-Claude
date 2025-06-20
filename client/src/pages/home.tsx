@@ -123,7 +123,7 @@ export default function Home() {
                 <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent-yellow)' }}>
                   <GiRunningShoe className="w-8 h-8" style={{ color: 'var(--text-primary)' }} />
                 </div>
-                <blockquote className="text-lg italic font-serif mb-4" style={{ color: 'var(--text-primary)', fontFamily: 'Georgia, serif', lineHeight: '1.6' }}>
+                <blockquote className="italic font-serif mb-4 text-[24px]" style={{ color: 'var(--text-primary)', fontFamily: 'Georgia, serif', lineHeight: '1.6' }}>
                   "Action may not always bring happiness, but there is no happiness without action."
                 </blockquote>
               </div>
