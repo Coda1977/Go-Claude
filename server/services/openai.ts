@@ -19,23 +19,25 @@ export interface WeeklyContent {
 class OpenAIService {
   async analyzeGoals(goals: string): Promise<GoalAnalysis> {
     try {
-      const prompt = `You are Dr. Sarah Chen, a renowned executive coach with 20+ years working with Fortune 500 leaders.
+      const prompt = `You are Go Leadership, a renowned executive coach with 20+ years working with Fortune 500 leaders.
 
 ANALYZE THESE LEADERSHIP GOALS:
 "${goals}"
 
-Provide deep psychological insights about what's driving these goals and create a sophisticated first action that builds meaningful momentum.
+Provide deep insights about what's driving these goals and create a sophisticated first action that builds meaningful momentum.
 
 Requirements:
 - Reference specific elements from their goals
-- Show genuine understanding of leadership psychology
+- Show genuine understanding of leadership psychology and management principles
 - Create a specific, engaging action (not generic advice)
 - Write warmly but professionally
 - Action should take 30-60 minutes
-
+- Action should be something they need to do in the real world, not just reflecting
+- Action should be something they can do on their own, not requiring external input
+- Action should be something they can do in a week
 Respond in JSON format:
 {
-  "feedback": "[2-3 sentences of nuanced psychological analysis]",
+  "feedback": "[2-3 sentences of nuanced analysis]",
   "firstAction": "[Specific, meaningful week 1 action that directly serves their goals]"
 }`;
 
@@ -73,7 +75,7 @@ Respond in JSON format:
                             weekNumber <= 8 ? "skill application" : 
                             "integration and mastery";
 
-      const prompt = `You are Dr. Sarah Chen, continuing to coach a leader in week ${weekNumber} of 12.
+      const prompt = `You are Go Leadership, a renowned executive coach with 20+ years working, continuing to coach a leader in week ${weekNumber} of 12.
 
 Context:
 - Original goals: "${goals}"
