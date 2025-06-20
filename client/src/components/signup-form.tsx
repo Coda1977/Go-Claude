@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   timezone: z.string().min(1, "Please select your timezone"),
-  goals: z.string().min(10, "Please describe your leadership goals (at least 10 characters)"),
+  goals: z.array(z.string().min(1, "Goal cannot be empty")).min(1, "At least one goal is required").max(3, "Maximum 3 goals allowed"),
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -50,9 +50,32 @@ export function SignupForm() {
     defaultValues: {
       email: "",
       timezone: "",
-      goals: "",
+      goals: [],
     },
   });
+
+  const [goalInputs, setGoalInputs] = useState([""]);
+
+  const addGoal = () => {
+    if (goalInputs.length < 3) {
+      setGoalInputs([...goalInputs, ""]);
+    }
+  };
+
+  const removeGoal = (index: number) => {
+    if (goalInputs.length > 1) {
+      const newGoals = goalInputs.filter((_, i) => i !== index);
+      setGoalInputs(newGoals);
+      setValue("goals", newGoals.filter(goal => goal.trim() !== ""));
+    }
+  };
+
+  const updateGoal = (index: number, value: string) => {
+    const newGoals = [...goalInputs];
+    newGoals[index] = value;
+    setGoalInputs(newGoals);
+    setValue("goals", newGoals.filter(goal => goal.trim() !== ""));
+  };
 
   // Auto-detect timezone on component mount
   useEffect(() => {
@@ -128,17 +151,47 @@ export function SignupForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="goals">Leadership Goals</Label>
-        <Textarea
-          id="goals"
-          rows={4}
-          placeholder="Describe your leadership goals and what you want to achieve..."
-          {...register("goals")}
-          className={`resize-none ${errors.goals ? "border-red-500" : ""}`}
-        />
+        <Label htmlFor="goals">Leadership Goals (1-3 goals, one per line)</Label>
+        <div className="space-y-3">
+          {goalInputs.map((goal, index) => (
+            <div key={index} className="flex gap-2 items-center">
+              <Input
+                placeholder={`Goal ${index + 1}`}
+                value={goal}
+                onChange={(e) => updateGoal(index, e.target.value)}
+                className={errors.goals ? "border-red-500" : ""}
+              />
+              {goalInputs.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeGoal(index)}
+                  className="shrink-0"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          ))}
+          {goalInputs.length < 3 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addGoal}
+              className="w-full"
+            >
+              Add Another Goal
+            </Button>
+          )}
+        </div>
         {errors.goals && (
           <p className="text-sm text-red-500">{errors.goals.message}</p>
         )}
+        <p className="text-sm text-gray-500">
+          Enter up to 3 leadership goals. Each goal should be specific and actionable.
+        </p>
       </div>
 
       <button

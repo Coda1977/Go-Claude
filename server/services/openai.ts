@@ -7,7 +7,10 @@ const openai = new OpenAI({
 
 export interface GoalAnalysis {
   feedback: string;
-  firstAction: string;
+  goalActions: Array<{
+    goal: string;
+    action: string;
+  }>;
 }
 
 export interface WeeklyContent {

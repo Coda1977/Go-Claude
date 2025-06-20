@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   timezone: text("timezone").notNull(),
-  goals: text("goals").notNull(),
+  goals: text("goals").array().notNull(),
   signupDate: timestamp("signup_date").defaultNow(),
   currentWeek: integer("current_week").default(0),
   isActive: boolean("is_active").default(true),
@@ -45,6 +45,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   timezone: true,
   goals: true,
+}).extend({
+  goals: z.array(z.string().min(1, "Goal cannot be empty")).min(1, "At least one goal is required").max(3, "Maximum 3 goals allowed")
 });
 
 export const insertEmailHistorySchema = createInsertSchema(emailHistory).omit({
