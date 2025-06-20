@@ -133,7 +133,7 @@ export default function Home() {
       <section id="how-it-works" className="section bg-white">
         <div className="container">
           <div className="text-center mb-20">
-            <h2 className="text-section mb-6">Your Leadership Journey</h2>
+            <h2 className="text-section mb-6">Your "Go" Journey</h2>
             <div className="section-divider"></div>
             <p className="text-body max-w-2xl mx-auto">
               Three simple steps to transform your leadership in 12 weeks
@@ -159,7 +159,7 @@ export default function Home() {
       <section id="signup" className="section-large bg-white">
         <div className="container">
           <div className="max-w-2xl mx-auto text-center mb-12">
-            <h2 className="text-section mb-6">Ready to Go?</h2>
+            <h2 className="text-section mb-6">Let's Go</h2>
             <div className="section-divider"></div>
             <p className="text-body">
               Join leaders who've transformed their impact through personalized AI coaching
