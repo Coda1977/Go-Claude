@@ -336,6 +336,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resend email endpoint for failed deliveries
+  app.post('/api/admin/resend-email/:userId', requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Generate fresh content
+      const goalAnalysis = await openaiService.analyzeGoals(user.goals);
+      
+      // Create new email record
+      const emailRecord = await storage.logEmailHistory({
+        userId: user.id,
+        weekNumber: 1,
+        subject: 'Welcome to Your Leadership Journey (Resent)',
+        content: goalAnalysis.feedback,
+        actionItem: goalAnalysis.goalActions.map(ga => `${ga.goal}: ${ga.action}`).join('\n'),
+        deliveryStatus: 'pending'
+      });
+
+      // Send email immediately
+      const success = await emailService.sendWelcomeEmail(user, goalAnalysis, emailRecord.id);
+      
+      if (success) {
+        await storage.updateEmailStatus(emailRecord.id, 'sent');
+        res.json({ 
+          message: `Welcome email resent successfully to ${user.email}`,
+          emailId: emailRecord.id
+        });
+      } else {
+        await storage.updateEmailStatus(emailRecord.id, 'failed');
+        res.status(500).json({ message: 'Failed to resend email' });
+      }
+    } catch (error) {
+      console.error('Error resending email:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Initialize scheduler
   scheduler.scheduleWeeklyEmails();
 
