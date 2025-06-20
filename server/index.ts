@@ -25,33 +25,44 @@ declare module 'express-session' {
   }
 }
 
+// Enhanced request/response logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
+  const method = req.method;
+  const userAgent = req.get('User-Agent') || 'unknown';
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  
+  // Skip logging for health checks and static assets
+  if (path === '/api/health' || path.startsWith('/assets/')) {
+    return next();
+  }
+  
+  console.log(`[${new Date().toISOString()}] ${method} ${path} - ${ip}`);
+  
+  // Capture response timing
+  res.on('finish', () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+    const statusCode = res.statusCode;
+    const statusClass = Math.floor(statusCode / 100);
+    
+    let logLevel = 'INFO';
+    if (statusClass === 4) logLevel = 'WARN';
+    if (statusClass === 5) logLevel = 'ERROR';
+    
+    console.log(`[${new Date().toISOString()}] ${logLevel} ${method} ${path} ${statusCode} - ${duration}ms`);
+    
+    // Log slow requests (>5s)
+    if (duration > 5000) {
+      console.warn(`[SLOW REQUEST] ${method} ${path} took ${duration}ms`);
+    }
+    
+    // Log errors with more details
+    if (statusClass >= 4) {
+      console.error(`[HTTP ERROR] ${statusCode} ${method} ${path} - IP: ${ip}`);
     }
   });
-
+  
   next();
 });
 

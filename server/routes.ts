@@ -22,6 +22,41 @@ const adminLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get('/api/health', async (req, res) => {
+    try {
+      // Check database connection
+      await storage.getStats();
+      
+      // Check required environment variables
+      const requiredEnvVars = ['DATABASE_URL', 'OPENAI_API_KEY', 'EMAIL_USER', 'EMAIL_PASSWORD'];
+      const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+      
+      if (missingVars.length > 0) {
+        return res.status(503).json({
+          status: 'unhealthy',
+          error: `Missing environment variables: ${missingVars.join(', ')}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        database: 'connected',
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      console.error('Health check failed:', error);
+      res.status(503).json({
+        status: 'unhealthy',
+        error: 'Database connection failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Security headers with CSP configuration for development
   app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : {
