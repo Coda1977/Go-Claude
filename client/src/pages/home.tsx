@@ -110,7 +110,7 @@ export default function Home() {
                 Turn your intentions into 
                 <span className="accent-yellow"> Impact</span>
               </h1>
-              <p className="text-body mb-12">Get personalized AI coaching that turns your intentions into actions.</p>
+              <p className="text-body mb-12">Get 12 Weeks of Personalized AI Coaching — Straight to Your Inbox</p>
               <div className="flex flex-col sm:flex-row gap-6">
                 <a href="#signup" className="btn-primary">
                   Start Your Journey
