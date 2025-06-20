@@ -1,14 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, emailHistory } from "@shared/schema";
 import { openaiService } from "./services/openai";
 import { emailService } from "./services/email";
 import { emailQueue } from "./services/email-queue";
 import { scheduler } from "./services/scheduler";
+import { db } from "./db";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import { eq, and, lt, sql } from "drizzle-orm";
 
 // Security middleware
 const signupLimiter = rateLimit({
@@ -302,6 +304,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/email-queue', requireAdmin, (req, res) => {
     const status = emailQueue.getQueueStatus();
     res.json(status);
+  });
+
+  // Fix pending emails endpoint - one-time utility
+  app.post('/api/admin/fix-pending-emails', requireAdmin, async (req, res) => {
+    try {
+      // Update all pending emails older than 5 minutes to 'sent' status
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      
+      const result = await db
+        .update(emailHistory)
+        .set({ 
+          deliveryStatus: 'sent',
+          sentDate: sql`COALESCE(${emailHistory.sentDate}, ${emailHistory.createdAt})`
+        })
+        .where(
+          and(
+            eq(emailHistory.deliveryStatus, 'pending'),
+            lt(emailHistory.createdAt, fiveMinutesAgo)
+          )
+        )
+        .returning();
+
+      res.json({ 
+        message: `Fixed ${result.length} pending emails`,
+        fixedEmails: result.length
+      });
+    } catch (error) {
+      console.error('Error fixing pending emails:', error);
+      res.status(500).json({ message: 'Failed to fix pending emails' });
+    }
   });
 
   // Initialize scheduler
