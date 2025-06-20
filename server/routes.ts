@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weekNumber: 1,
         subject: "Welcome to Your Leadership Journey!",
         content: goalAnalysis.feedback,
-        actionItem: goalAnalysis.firstAction,
+        actionItem: goalAnalysis.goalActions.map(ga => `${ga.goal}: ${ga.action}`).join('\n\n'),
       });
       
       // Send welcome email with tracking pixel

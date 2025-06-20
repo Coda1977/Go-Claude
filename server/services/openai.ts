@@ -20,16 +20,18 @@ export interface WeeklyContent {
 }
 
 class OpenAIService {
-  async analyzeGoals(goals: string): Promise<GoalAnalysis> {
+  async analyzeGoals(goals: string[]): Promise<GoalAnalysis> {
     try {
+      const goalsText = goals.map((goal, index) => `${index + 1}. ${goal}`).join('\n');
+      
       const prompt = `You are Go Coach, an AI leadership development specialist with expertise in executive psychology, organizational behavior, and evidence-based leadership practices.
 
 CONTEXT: You're analyzing initial leadership goals for a 12-week personalized development program. This is week 0 - the foundation-setting phase.
 
 LEADERSHIP GOALS TO ANALYZE:
-"${goals}"
+${goalsText}
 
-TASK: Create a sophisticated analysis and actionable first step that demonstrates deep understanding of their specific aspirations.
+TASK: Create a sophisticated analysis and provide specific actionable steps for each goal that demonstrates deep understanding of their aspirations.
 
 ANALYSIS REQUIREMENTS:
 - Identify underlying psychological drivers (achievement, influence, legacy, etc.)
@@ -37,8 +39,8 @@ ANALYSIS REQUIREMENTS:
 - Show understanding of leadership development stages
 - Avoid generic business advice - be personally relevant
 
-FIRST ACTION REQUIREMENTS:
-- 30-60 minutes of focused work
+ACTION REQUIREMENTS FOR EACH GOAL:
+- 20-45 minutes of focused work per goal
 - Concrete, observable action (not just reflection)
 - Can be completed independently within 7 days
 - Creates immediate momentum toward their specific goals
@@ -47,29 +49,40 @@ FIRST ACTION REQUIREMENTS:
 TONE: Professional but warm, coach-like, encouraging yet challenging
 Respond in JSON format:
 {
-  "feedback": "[2-3 sentences of nuanced analysis]",
-  "firstAction": "[Specific, meaningful week 1 action that directly serves their goals]"
+  "feedback": "[2-3 sentences of nuanced analysis covering all goals]",
+  "goalActions": [
+    {
+      "goal": "[exact goal text]",
+      "action": "[Specific, meaningful week 1 action for this goal]"
+    }
+  ]
 }`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        max_tokens: 600,
+        max_tokens: 800,
       });
 
       const result = JSON.parse(response.choices[0].message.content || "{}");
       
       return {
         feedback: result.feedback || "Your leadership aspirations reveal a sophisticated understanding of what drives meaningful influence and organizational impact.",
-        firstAction: result.firstAction || "Conduct a 'leadership moment audit' this week: identify three recent interactions where you exercised leadership, noting what felt natural, what challenged you, and what you'd approach differently now."
+        goalActions: result.goalActions || goals.map(goal => ({
+          goal,
+          action: "Take 30 minutes this week to identify one specific leadership behavior related to this goal and write down three concrete steps to address it."
+        }))
       };
     } catch (error) {
       console.error("OpenAI goal analysis error:", error);
       // Fallback response
       return {
         feedback: "Your leadership aspirations reveal a sophisticated understanding of what drives meaningful influence and organizational impact.",
-        firstAction: "Conduct a 'leadership moment audit' this week: identify three recent interactions where you exercised leadership, noting what felt natural, what challenged you, and what you'd approach differently now."
+        goalActions: goals.map(goal => ({
+          goal,
+          action: "Conduct a focused 30-minute reflection on this goal: identify one recent situation where progress toward this goal was possible, noting what worked, what didn't, and one specific action you can take this week."
+        }))
       };
     }
   }
