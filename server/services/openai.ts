@@ -63,7 +63,7 @@ WEEK 1 ACTION REQUIREMENTS (per goal):
 - Can be completed independently within 7 days
 - Directly serves the stated goal
 
-RESPONSE FORMAT:
+Provide your response as a valid json object in this exact format:
 {
   "goals": [
     {
