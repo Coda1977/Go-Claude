@@ -21,6 +21,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   trackEmailOpen(emailId: number): Promise<void>;
   trackEmailClick(emailId: number): Promise<void>;
+  updateEmailStatus(emailId: number, status: 'pending' | 'sent' | 'failed'): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -189,6 +190,23 @@ export class DatabaseStorage implements IStorage {
       .update(emailHistory)
       .set({ clickCount: sql`COALESCE(${emailHistory.clickCount}, 0) + 1` })
       .where(eq(emailHistory.id, emailId));
+  }
+
+  async updateEmailStatus(emailId: number, status: 'pending' | 'sent' | 'failed'): Promise<void> {
+    try {
+      await db
+        .update(emailHistory)
+        .set({ 
+          deliveryStatus: status,
+          sentDate: status === 'sent' ? new Date() : undefined
+        })
+        .where(eq(emailHistory.id, emailId));
+      
+      console.log(`Email status updated to '${status}' for email ID: ${emailId}`);
+    } catch (error) {
+      console.error(`Failed to update email status for email ID ${emailId}:`, error);
+      throw error;
+    }
   }
 
   // Add this new method for timezone checking

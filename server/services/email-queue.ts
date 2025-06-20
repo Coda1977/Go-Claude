@@ -131,10 +131,15 @@ class EmailQueue {
       const success = await emailService.sendWelcomeEmail(job.user, goalAnalysis, emailRecord.id);
       
       if (success) {
+        // Update email status to 'sent' in database
+        await storage.updateEmailStatus(emailRecord.id, 'sent');
         console.log(`[EMAIL QUEUE] Welcome email sent successfully to ${job.user.email}`);
         return true;
+      } else {
+        // Update email status to 'failed' in database
+        await storage.updateEmailStatus(emailRecord.id, 'failed');
+        return false;
       }
-      return false;
     } catch (error) {
       console.error(`[EMAIL QUEUE] Failed to process welcome email for user ${job.user.id}:`, error);
       return false;
@@ -167,10 +172,15 @@ class EmailQueue {
       const success = await emailService.sendWeeklyEmail(job.user, job.weekNumber, weeklyContent, subject, emailRecord.id);
       
       if (success) {
+        // Update email status to 'sent' in database
+        await storage.updateEmailStatus(emailRecord.id, 'sent');
         console.log(`[EMAIL QUEUE] Weekly email (week ${job.weekNumber}) sent successfully to ${job.user.email}`);
         return true;
+      } else {
+        // Update email status to 'failed' in database
+        await storage.updateEmailStatus(emailRecord.id, 'failed');
+        return false;
       }
-      return false;
     } catch (error) {
       console.error(`[EMAIL QUEUE] Failed to process weekly email for user ${job.user.id}:`, error);
       return false;
