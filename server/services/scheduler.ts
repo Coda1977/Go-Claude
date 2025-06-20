@@ -102,25 +102,29 @@ class Scheduler {
       // Generate subject line
       const subject = await openaiService.generateSubjectLine(weekNumber, weeklyContent.actionItem);
 
-      // Log email history first to get tracking ID
-      const emailRecord = await storage.logEmailHistory({
-        userId: user.id,
-        weekNumber: weekNumber,
-        subject,
-        content: `${weeklyContent.encouragement}\n\n${weeklyContent.goalConnection}`,
-        actionItem: weeklyContent.actionItem,
-      });
+      // Send email first to verify delivery
+      const emailSent = await emailService.sendWeeklyEmail(user, weekNumber, weeklyContent, subject);
+      
+      if (emailSent) {
+        // Only log email record after successful delivery
+        const emailRecord = await storage.logEmailHistory({
+          userId: user.id,
+          weekNumber: weekNumber,
+          subject,
+          content: `${weeklyContent.encouragement}\n\n${weeklyContent.goalConnection}`,
+          actionItem: weeklyContent.actionItem,
+        });
 
-      // Send email with tracking ID
-      await emailService.sendWeeklyEmail(user, weekNumber, weeklyContent, subject, emailRecord.id);
+        // Update user progress only after successful email
+        await storage.updateUser(user.id, {
+          currentWeek: weekNumber,
+          lastEmailSent: new Date(),
+        });
 
-      // Update user progress
-      await storage.updateUser(user.id, {
-        currentWeek: weekNumber,
-        lastEmailSent: new Date(),
-      });
-
-      console.log(`Successfully sent week ${weekNumber} email to user ${user.id} (${user.email})`);
+        console.log(`Successfully sent week ${weekNumber} email to user ${user.id} (${user.email})`);
+      } else {
+        throw new Error("Email delivery failed - service returned false");
+      }
 
     } catch (error) {
       console.error(`Failed to send email to user ${user.id}:`, error);
