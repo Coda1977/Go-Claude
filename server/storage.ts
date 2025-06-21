@@ -3,7 +3,7 @@ import { db } from "./db";
 import { eq, and, lte, gte, desc, sql } from "drizzle-orm";
 import { users as usersTable } from "@shared/schema";
 import { format, addDays, isAfter, parseISO, startOfDay, addHours } from "date-fns";
-import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -215,7 +215,7 @@ export class DatabaseStorage implements IStorage {
   private async isUserTimeWindow(user: User, now: Date): Promise<boolean> {
     try {
       // Convert current UTC time to user's timezone
-      const userTime = utcToZonedTime(now, user.timezone);
+      const userTime = toZonedTime(now, user.timezone);
       const dayOfWeek = userTime.getDay(); // 0 = Sunday, 1 = Monday
       const hour = userTime.getHours();
       
@@ -231,14 +231,14 @@ export class DatabaseStorage implements IStorage {
   // Improved week checking with proper timezone handling
   private async shouldReceiveEmailThisWeek(user: User, now: Date): Promise<boolean> {
     // Get start of current week (Monday) in user's timezone
-    const userTime = utcToZonedTime(now, user.timezone);
+    const userTime = toZonedTime(now, user.timezone);
     const startOfWeek = new Date(userTime);
     const daysSinceMonday = (userTime.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
     startOfWeek.setDate(userTime.getDate() - daysSinceMonday);
     startOfWeek.setHours(0, 0, 0, 0);
     
     // Convert back to UTC for database query
-    const startOfWeekUTC = zonedTimeToUtc(startOfWeek, user.timezone);
+    const startOfWeekUTC = fromZonedTime(startOfWeek, user.timezone);
     
     // Check if user received email this week
     const recentEmails = await db
