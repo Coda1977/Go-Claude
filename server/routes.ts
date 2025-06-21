@@ -27,6 +27,9 @@ const adminLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Webhook route (before middleware and rate limiting)
+  app.post('/api/webhooks/resend', express.raw({type: 'application/json'}), handleResendWebhook);
+
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
     try {
@@ -34,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.getStats();
       
       // Check required environment variables
-      const requiredEnvVars = ['DATABASE_URL', 'OPENAI_API_KEY', 'EMAIL_USER', 'EMAIL_PASSWORD'];
+      const requiredEnvVars = ['DATABASE_URL', 'OPENAI_API_KEY', 'RESEND_API_KEY'];
       const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
       
       if (missingVars.length > 0) {

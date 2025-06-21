@@ -211,11 +211,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Add this new method for timezone checking
+  // Improved timezone checking with date-fns-tz
   private async isUserTimeWindow(user: User, now: Date): Promise<boolean> {
     try {
-      // Convert current time to user's timezone
-      const userTime = new Date(now.toLocaleString("en-US", { timeZone: user.timezone }));
+      // Convert current UTC time to user's timezone
+      const userTime = utcToZonedTime(now, user.timezone);
       const dayOfWeek = userTime.getDay(); // 0 = Sunday, 1 = Monday
       const hour = userTime.getHours();
       
@@ -228,13 +228,17 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Add this method to prevent duplicate emails
+  // Improved week checking with proper timezone handling
   private async shouldReceiveEmailThisWeek(user: User, now: Date): Promise<boolean> {
-    // Get start of current week (Monday)
-    const startOfWeek = new Date(now);
-    const daysSinceMonday = (now.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
-    startOfWeek.setDate(now.getDate() - daysSinceMonday);
+    // Get start of current week (Monday) in user's timezone
+    const userTime = utcToZonedTime(now, user.timezone);
+    const startOfWeek = new Date(userTime);
+    const daysSinceMonday = (userTime.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+    startOfWeek.setDate(userTime.getDate() - daysSinceMonday);
     startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Convert back to UTC for database query
+    const startOfWeekUTC = zonedTimeToUtc(startOfWeek, user.timezone);
     
     // Check if user received email this week
     const recentEmails = await db
@@ -243,7 +247,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(emailHistory.userId, user.id),
-          gte(emailHistory.sentDate, startOfWeek)
+          gte(emailHistory.sentDate, startOfWeekUTC)
         )
       );
     
