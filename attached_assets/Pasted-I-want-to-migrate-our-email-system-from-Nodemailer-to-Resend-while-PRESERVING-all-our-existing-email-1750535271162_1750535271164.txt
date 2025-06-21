@@ -1,0 +1,153 @@
+I want to migrate our email system from Nodemailer to Resend while PRESERVING all our existing email templates, designs, and content generation. 
+
+CONTEXT: We have a working email system with beautiful HTML templates, OpenAI content generation, and a design system using colors #003566 (blue), #FFD60A (yellow), #F5F0E8 (background), and #FFFFFF (white). The emails already look great - we just need to change the sending mechanism.
+
+Please make these changes:
+
+1. INSTALL RESEND
+Run: npm install resend
+Do not install @react-email/components - we're keeping our HTML templates.
+
+2. UPDATE server/services/email.ts
+Replace the Nodemailer transporter with Resend, but keep everything else the same:
+- Import Resend at the top: import { Resend } from 'resend';
+- Replace the transporter initialization in constructor with: this.resend = new Resend(process.env.RESEND_API_KEY);
+- In sendWelcomeEmail method, replace the transporter.sendMail call with:
+  const { data, error } = await this.resend.emails.send({
+    from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
+    to: user.email,
+    subject: subject,
+    html: html,
+    tags: [
+      { name: 'type', value: 'welcome' },
+      { name: 'user_id', value: String(user.id) },
+      { name: 'email_id', value: String(emailId) }
+    ]
+  });
+- If error exists, throw it. If successful, return true.
+- Make the same change in sendWeeklyEmail method.
+- Remove all SMTP configuration and the verify() calls.
+- Keep the EmailTemplates usage exactly as is.
+
+3. UPDATE DATABASE SCHEMA
+In shared/schema.ts, add to the emailHistory table:
+- resendId: text("resend_id")
+Add this field after the clickCount field.
+
+4. CREATE DATABASE MIGRATION
+Create a new file migrations/add-resend-id.sql with:
+ALTER TABLE email_history ADD COLUMN resend_id TEXT;
+
+5. CREATE WEBHOOK HANDLER
+Create new file server/routes/webhooks.ts with:
+import { Request, Response } from "express";
+import { db } from "../db";
+import { emailHistory } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import crypto from "crypto";
+
+export async function handleResendWebhook(req: Request, res: Response) {
+  const signature = req.headers["resend-signature"] as string;
+  const timestamp = req.headers["resend-timestamp"] as string;
+  const body = JSON.stringify(req.body);
+  
+  // Verify webhook signature
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("RESEND_WEBHOOK_SECRET not configured");
+    return res.status(500).send("Webhook secret not configured");
+  }
+  
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${body}`)
+    .digest("hex");
+    
+  if (signature !== expectedSignature) {
+    return res.status(401).send("Invalid signature");
+  }
+  
+  const { type, data } = req.body;
+  
+  try {
+    switch (type) {
+      case "email.sent":
+      case "email.delivered":
+        await db.update(emailHistory)
+          .set({ deliveryStatus: "sent" })
+          .where(eq(emailHistory.resendId, data.email_id));
+        break;
+        
+      case "email.opened":
+        await db.update(emailHistory)
+          .set({ openedAt: new Date() })
+          .where(eq(emailHistory.resendId, data.email_id));
+        break;
+        
+      case "email.clicked":
+        await db.update(emailHistory)
+          .set({ clickCount: sql`COALESCE(click_count, 0) + 1` })
+          .where(eq(emailHistory.resendId, data.email_id));
+        break;
+        
+      case "email.bounced":
+        await db.update(emailHistory)
+          .set({ deliveryStatus: "failed" })
+          .where(eq(emailHistory.resendId, data.email_id));
+        break;
+    }
+    
+    res.status(200).send("OK");
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    res.status(500).send("Internal error");
+  }
+}
+
+6. REGISTER WEBHOOK ROUTE
+In server/routes.ts:
+- Import at the top: import { handleResendWebhook } from "./routes/webhooks";
+- Add this route BEFORE the helmet middleware: app.post("/api/webhooks/resend", express.raw({ type: "application/json" }), handleResendWebhook);
+
+7. UPDATE EMAIL SERVICE TO STORE RESEND ID
+Back in server/services/email.ts:
+- Modify both send methods to store the Resend message ID
+- After successful send, add:
+  if (emailId && data?.id) {
+    await db.update(emailHistory)
+      .set({ resendId: data.id })
+      .where(eq(emailHistory.id, emailId));
+  }
+
+8. SIMPLIFY EMAIL QUEUE
+In server/services/email-queue.ts:
+- Remove all retry logic (delete the retryCount property and related code)
+- Remove the retryFailedEmails method completely
+- Remove the retry scheduled task in constructor
+- Keep everything else the same - the queue still processes emails, just without retries
+
+9. UPDATE ENVIRONMENT VALIDATION
+In server/index.ts in the validateEnvironment function:
+- Add 'RESEND_API_KEY' to the requiredEnvVars array
+- Keep all existing environment variables for now
+
+10. ADD RESEND WEBHOOK SECRET
+In server/routes/webhooks.ts validation, add RESEND_WEBHOOK_SECRET to environment validation.
+
+11. UPDATE storage.ts
+Add this method to the DatabaseStorage class:
+async updateEmailByResendId(resendId: string, updates: Partial<EmailHistory>): Promise<void> {
+  await db.update(emailHistory)
+    .set(updates)
+    .where(eq(emailHistory.resendId, resendId));
+}
+
+DO NOT CHANGE:
+- The email templates in email-templates.ts
+- The HTML structure or styling of emails  
+- The OpenAI service
+- The scheduler logic
+- The admin dashboard
+- Any of the existing tracking endpoints
+
+TEST: After making these changes, register a new user and verify they receive the welcome email with the same design as before.

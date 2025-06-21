@@ -1,0 +1,1 @@
+ALTER TABLE email_history ADD COLUMN resend_id TEXT;

@@ -7,7 +7,6 @@ interface WelcomeEmailJob {
   type: 'welcome';
   user: User;
   timestamp: Date;
-  retryCount: number;
 }
 
 interface WeeklyEmailJob {
@@ -15,7 +14,6 @@ interface WeeklyEmailJob {
   user: User;
   weekNumber: number;
   timestamp: Date;
-  retryCount: number;
 }
 
 type EmailJob = WelcomeEmailJob | WeeklyEmailJob;
