@@ -27,6 +27,7 @@ export const emailHistory = pgTable("email_history", {
   deliveryStatus: text("delivery_status").default("sent"),
   openedAt: timestamp("opened_at"),
   clickCount: integer("click_count").default(0),
+  resendId: text("resend_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

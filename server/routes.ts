@@ -11,6 +11,8 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { eq, and, lt, sql } from "drizzle-orm";
+import { handleResendWebhook } from "./routes/webhooks";
+import express from "express";
 
 // Security middleware
 const signupLimiter = rateLimit({

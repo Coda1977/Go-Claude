@@ -1,27 +1,22 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { User } from "@shared/schema";
 import { GoalAnalysis, WeeklyContent } from "./openai";
 import { EmailTemplates } from "./email-templates";
+import { db } from "../db";
+import { emailHistory } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER || process.env.EMAIL_USER_ENV_VAR || "default@email.com",
-        pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASSWORD_ENV_VAR || "default_password",
-      },
-    });
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
   async sendWelcomeEmail(user: User, goalAnalysis: GoalAnalysis, emailId?: number): Promise<boolean> {
     // Skip email sending in development if credentials not configured
-    if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
-      console.log(`Email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`Email sending skipped for ${user.email} - configure RESEND_API_KEY to enable emails`);
       return false;
     }
 
@@ -30,69 +25,79 @@ class EmailService {
 
     try {
       console.log(`Attempting to send welcome email to ${user.email}...`);
-      
-      // Verify transporter before sending
-      const verified = await this.transporter.verify();
-      if (!verified) {
-        console.error("SMTP transporter verification failed - check email credentials");
-        throw new Error("Email transporter verification failed");
-      }
-      
-      console.log("SMTP transporter verified successfully");
 
-      const info = await this.transporter.sendMail({
-        from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
+      const { data, error } = await this.resend.emails.send({
+        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
         to: user.email,
-        subject,
-        html,
+        subject: subject,
+        html: html,
+        tags: [
+          { name: 'type', value: 'welcome' },
+          { name: 'user_id', value: String(user.id) },
+          { name: 'email_id', value: String(emailId) }
+        ]
       });
 
-      // Verify the message was accepted
-      if (info.rejected && info.rejected.length > 0) {
-        throw new Error(`Email rejected: ${info.rejected.join(', ')}`);
+      if (error) {
+        throw error;
       }
 
-      console.log(`Welcome email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Message ID: ${info.messageId}`);
+      console.log(`Welcome email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Resend ID: ${data?.id}`);
+      
+      // Store Resend ID for tracking
+      if (emailId && data?.id) {
+        await db.update(emailHistory)
+          .set({ resendId: data.id })
+          .where(eq(emailHistory.id, emailId));
+      }
+
       return true;
     } catch (error) {
       console.error("Failed to send welcome email:", error);
-      throw error; // Always throw to ensure proper error handling upstream
+      throw error;
     }
   }
 
   async sendWeeklyEmail(user: User, weekNumber: number, content: WeeklyContent, subject: string, emailId?: number): Promise<boolean> {
     // Skip email sending in development if credentials not configured
-    if (!process.env.EMAIL_USER || process.env.EMAIL_USER === "default@email.com") {
-      console.log(`Weekly email sending skipped for ${user.email} - configure EMAIL_USER and EMAIL_PASSWORD to enable emails`);
+    if (!process.env.RESEND_API_KEY) {
+      console.log(`Weekly email sending skipped for ${user.email} - configure RESEND_API_KEY to enable emails`);
       return false;
     }
 
     const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content, emailId);
 
     try {
-      // Verify transporter before sending
-      const verified = await this.transporter.verify();
-      if (!verified) {
-        throw new Error("Email transporter verification failed");
-      }
-
-      const info = await this.transporter.sendMail({
-        from: `"Go Coach - GO Leadership" <${process.env.EMAIL_USER}>`,
+      const { data, error } = await this.resend.emails.send({
+        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
         to: user.email,
-        subject,
-        html,
+        subject: subject,
+        html: html,
+        tags: [
+          { name: 'type', value: 'weekly' },
+          { name: 'user_id', value: String(user.id) },
+          { name: 'week_number', value: String(weekNumber) },
+          { name: 'email_id', value: String(emailId) }
+        ]
       });
 
-      // Verify the message was accepted
-      if (info.rejected && info.rejected.length > 0) {
-        throw new Error(`Email rejected: ${info.rejected.join(', ')}`);
+      if (error) {
+        throw error;
       }
 
-      console.log(`Week ${weekNumber} email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Message ID: ${info.messageId}`);
+      console.log(`Week ${weekNumber} email sent successfully to ${user.email}${emailId ? ` with tracking ID ${emailId}` : ''} - Resend ID: ${data?.id}`);
+      
+      // Store Resend ID for tracking
+      if (emailId && data?.id) {
+        await db.update(emailHistory)
+          .set({ resendId: data.id })
+          .where(eq(emailHistory.id, emailId));
+      }
+
       return true;
     } catch (error) {
       console.error(`Failed to send week ${weekNumber} email:`, error);
-      throw error; // Always throw to ensure proper error handling upstream
+      throw error;
     }
   }
 
@@ -113,15 +118,27 @@ class EmailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: `"Go Leadership Admin" <${process.env.EMAIL_USER}>`,
+      if (!process.env.RESEND_API_KEY) {
+        throw new Error("RESEND_API_KEY not configured");
+      }
+
+      const { data, error } = await this.resend.emails.send({
+        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
         to: email,
-        subject,
-        html,
+        subject: subject,
+        html: html,
+        tags: [
+          { name: 'type', value: 'test' }
+        ]
       });
-      console.log(`Test email sent to ${email}`);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`Test email sent successfully to ${email} - Resend ID: ${data?.id}`);
     } catch (error) {
-      console.error("Failed to send test email:", error);
+      console.error(`Test email failed:`, error);
       throw error;
     }
   }
