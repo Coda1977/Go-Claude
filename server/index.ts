@@ -8,8 +8,7 @@ function validateEnvironment() {
   const requiredEnvVars = [
     'DATABASE_URL',
     'OPENAI_API_KEY', 
-    'EMAIL_USER',
-    'EMAIL_PASSWORD',
+    'RESEND_API_KEY',
     'SESSION_SECRET'
   ];
   
