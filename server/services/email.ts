@@ -27,7 +27,7 @@ class EmailService {
       console.log(`Attempting to send welcome email to ${user.email}...`);
 
       const { data, error } = await this.resend.emails.send({
-        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
+        from: 'GO Leadership <onboarding@resend.dev>',
         to: user.email,
         subject: subject,
         html: html,
@@ -69,7 +69,7 @@ class EmailService {
 
     try {
       const { data, error } = await this.resend.emails.send({
-        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
+        from: 'GO Leadership <onboarding@resend.dev>',
         to: user.email,
         subject: subject,
         html: html,
@@ -123,7 +123,7 @@ class EmailService {
       }
 
       const { data, error } = await this.resend.emails.send({
-        from: 'Go Coach - GO Leadership <noreply@go-leadership.com>',
+        from: 'GO Leadership <onboarding@resend.dev>',
         to: email,
         subject: subject,
         html: html,
