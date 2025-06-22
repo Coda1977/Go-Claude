@@ -26,15 +26,26 @@ class EmailService {
     try {
       console.log(`Attempting to send welcome email to ${user.email}...`);
 
+      // In development, use verified email for testing
+      const recipientEmail = process.env.NODE_ENV === 'development' 
+        ? 'tinymanagerai@gmail.com' 
+        : user.email;
+
+      // Add original recipient info to subject and content in development
+      const devSubject = process.env.NODE_ENV === 'development' 
+        ? `[FOR: ${user.email}] ${subject}`
+        : subject;
+
       const { data, error } = await this.resend.emails.send({
         from: 'GO Leadership <onboarding@resend.dev>',
-        to: user.email,
-        subject: subject,
+        to: recipientEmail,
+        subject: devSubject,
         html: html,
         tags: [
           { name: 'type', value: 'welcome' },
           { name: 'user_id', value: String(user.id) },
-          { name: 'email_id', value: String(emailId) }
+          { name: 'email_id', value: String(emailId) },
+          { name: 'original_recipient', value: user.email }
         ]
       });
 
@@ -68,16 +79,27 @@ class EmailService {
     const html = EmailTemplates.generateWeeklyEmail(user, weekNumber, content, emailId);
 
     try {
+      // In development, use verified email for testing
+      const recipientEmail = process.env.NODE_ENV === 'development' 
+        ? 'tinymanagerai@gmail.com' 
+        : user.email;
+
+      // Add original recipient info to subject in development
+      const devSubject = process.env.NODE_ENV === 'development' 
+        ? `[FOR: ${user.email}] ${subject}`
+        : subject;
+
       const { data, error } = await this.resend.emails.send({
         from: 'GO Leadership <onboarding@resend.dev>',
-        to: user.email,
-        subject: subject,
+        to: recipientEmail,
+        subject: devSubject,
         html: html,
         tags: [
           { name: 'type', value: 'weekly' },
           { name: 'user_id', value: String(user.id) },
           { name: 'week_number', value: String(weekNumber) },
-          { name: 'email_id', value: String(emailId) }
+          { name: 'email_id', value: String(emailId) },
+          { name: 'original_recipient', value: user.email }
         ]
       });
 
