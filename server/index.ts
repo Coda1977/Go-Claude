@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { logger } from "./services/logger";
+import { monitoringService } from "./services/monitoring";
 
 // Environment validation on startup
 function validateEnvironment() {
@@ -15,12 +17,12 @@ function validateEnvironment() {
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    console.error(`[STARTUP ERROR] Missing required environment variables: ${missingVars.join(', ')}`);
-    console.error('Application cannot start without these variables.');
+    logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    logger.error('Application cannot start without these variables.');
     process.exit(1);
   }
   
-  console.log(`[STARTUP] Environment validation passed. ${requiredEnvVars.length} variables configured.`);
+  logger.info(`Environment validation passed. ${requiredEnvVars.length} variables configured.`);
 }
 
 // Validate environment before starting server
@@ -60,7 +62,7 @@ app.use((req, res, next) => {
     return next();
   }
   
-  console.log(`[${new Date().toISOString()}] ${method} ${path} - ${ip}`);
+  logger.info(`${method} ${path}`, { ip, path, method });
   
   // Capture response timing
   res.on('finish', () => {
@@ -68,46 +70,86 @@ app.use((req, res, next) => {
     const statusCode = res.statusCode;
     const statusClass = Math.floor(statusCode / 100);
     
-    let logLevel = 'INFO';
-    if (statusClass === 4) logLevel = 'WARN';
-    if (statusClass === 5) logLevel = 'ERROR';
+    const logData = {
+      method,
+      path,
+      statusCode,
+      duration,
+      ip
+    };
     
-    console.log(`[${new Date().toISOString()}] ${logLevel} ${method} ${path} ${statusCode} - ${duration}ms`);
+    if (statusClass >= 5) {
+      logger.error(`${method} ${path} ${statusCode}`, logData);
+    } else if (statusClass >= 4) {
+      logger.warn(`${method} ${path} ${statusCode}`, logData);
+    } else {
+      logger.info(`${method} ${path} ${statusCode}`, logData);
+    }
     
     // Log slow requests (>5s)
     if (duration > 5000) {
-      console.warn(`[SLOW REQUEST] ${method} ${path} took ${duration}ms`);
+      logger.warn(`Slow request: ${method} ${path} took ${duration}ms`, logData);
     }
     
-    // Log errors with more details
-    if (statusClass >= 4) {
-      console.error(`[HTTP ERROR] ${statusCode} ${method} ${path} - IP: ${ip}`);
-    }
+    // Log performance metrics
+    monitoringService.logPerformanceMetric(
+      `${method} ${path}`,
+      duration,
+      statusClass < 4
+    );
   });
   
   next();
 });
 
 // Graceful shutdown handling
-process.on('SIGTERM', () => {
-  console.log('[SHUTDOWN] Received SIGTERM signal, shutting down gracefully...');
-  process.exit(0);
+process.on('SIGTERM', async () => {
+  logger.info('Received SIGTERM signal, shutting down gracefully...');
+  await gracefulShutdown();
 });
 
-process.on('SIGINT', () => {
-  console.log('[SHUTDOWN] Received SIGINT signal, shutting down gracefully...');
-  process.exit(0);
+process.on('SIGINT', async () => {
+  logger.info('Received SIGINT signal, shutting down gracefully...');
+  await gracefulShutdown();
 });
+
+async function gracefulShutdown() {
+  try {
+    logger.info('Starting graceful shutdown...');
+    
+    // Shutdown services
+    monitoringService.shutdown();
+    
+    // Import and shutdown Redis queue
+    const { redisEmailQueue } = await import('./services/redis-email-queue');
+    await redisEmailQueue.shutdown();
+    
+    logger.info('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+}
 
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    logger.error(`Error handling ${req.method} ${req.path}:`, {
+      status,
+      message,
+      stack: err.stack,
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+    
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

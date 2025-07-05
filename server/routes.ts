@@ -13,6 +13,8 @@ import helmet from "helmet";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { handleResendWebhook } from "./routes/webhooks";
 import express from "express";
+import { monitoringService } from "./services/monitoring";
+import { logger } from "./services/logger";
 
 // Security middleware
 const signupLimiter = rateLimit({
@@ -30,36 +32,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Webhook route (before middleware and rate limiting)
   app.post('/api/webhooks/resend', express.raw({type: 'application/json'}), handleResendWebhook);
 
-  // Health check endpoint
+  // Enhanced health check endpoint
   app.get('/api/health', async (req, res) => {
     try {
-      // Check database connection
-      await storage.getStats();
+      const health = await monitoringService.getHealthStatus();
       
-      // Check required environment variables
-      const requiredEnvVars = ['DATABASE_URL', 'OPENAI_API_KEY', 'RESEND_API_KEY'];
-      const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+      const statusCode = health.status === 'healthy' ? 200 : 
+                        health.status === 'degraded' ? 200 : 503;
       
-      if (missingVars.length > 0) {
-        return res.status(503).json({
-          status: 'unhealthy',
-          error: `Missing environment variables: ${missingVars.join(', ')}`,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        database: 'connected',
-        environment: process.env.NODE_ENV || 'development'
-      });
+      res.status(statusCode).json(health);
     } catch (error) {
-      console.error('Health check failed:', error);
+      logger.error('Health check failed:', error);
       res.status(503).json({
         status: 'unhealthy',
-        error: 'Database connection failed',
+        error: 'Health check failed',
         timestamp: new Date().toISOString()
       });
     }
@@ -79,13 +65,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
-  // Health check endpoint
-  app.get("/api/health", async (req, res) => {
+  // System metrics endpoint (admin only)
+  app.get("/api/metrics", adminLimiter, async (req, res) => {
     try {
-      const stats = await storage.getStats();
-      res.json({ status: "healthy", stats });
+      if (!(req.session as any).isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      const metrics = await monitoringService.getDetailedMetrics();
+      res.json(metrics);
     } catch (error) {
-      res.status(500).json({ status: "unhealthy", error: error instanceof Error ? error.message : 'Unknown error' });
+      logger.error('Metrics endpoint failed:', error);
+      res.status(500).json({ error: "Failed to get metrics" });
     }
   });
 
