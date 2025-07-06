@@ -44,8 +44,7 @@ class EmailService {
         tags: [
           { name: 'type', value: 'welcome' },
           { name: 'user_id', value: String(user.id) },
-          { name: 'email_id', value: String(emailId) },
-          { name: 'original_recipient', value: user.email }
+          { name: 'email_id', value: String(emailId) }
         ]
       });
 
