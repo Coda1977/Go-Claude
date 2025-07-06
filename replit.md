@@ -97,7 +97,16 @@ Required environment variables:
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- July 06, 2025: Fixed application startup issues
+  - ✓ Resolved Winston package installation
+  - ✓ Fixed Redis dependencies (switched to in-memory email queue)
+  - ✓ Corrected JSX syntax errors in signup form
+  - ✓ Fixed API request parameter order in signup submission
+
 ## Changelog
 
 Changelog:
 - July 05, 2025. Initial setup
+- July 06, 2025. Application debugging and fixes

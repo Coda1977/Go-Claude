@@ -191,10 +191,7 @@ export function SignupForm() {
   const onSubmit = async (data: SignupForm) => {
     setIsSubmitting(true);
     try {
-      await apiRequest("/api/users", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/users", data);
 
       toast({
         title: "Welcome aboard!",
