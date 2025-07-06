@@ -279,6 +279,33 @@
     gap: 60px;
   }
 
+  /* Flex utilities for signup form */
+  .flex-2 {
+    flex: 2;
+  }
+
+  /* Enhanced form styling */
+  .form-field-enhanced {
+    @apply h-14 text-base rounded-xl border-2 transition-all duration-200;
+  }
+
+  .form-field-enhanced:focus {
+    @apply ring-0 border-blue-500;
+    border-color: var(--accent-blue);
+  }
+
+  .form-field-enhanced:hover {
+    @apply border-gray-300;
+  }
+
+  .form-field-error {
+    @apply border-red-400;
+  }
+
+  .form-field-error:focus {
+    @apply border-red-500;
+  }
+
   @media (max-width: 768px) {
     .grid-3, .grid-2 {
       grid-template-columns: 1fr;

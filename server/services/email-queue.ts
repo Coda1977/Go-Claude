@@ -112,8 +112,17 @@ class EmailQueue {
 
   private async processWelcomeEmail(job: WelcomeEmailJob): Promise<boolean> {
     try {
-      // Generate AI analysis
-      const goalAnalysis = await openaiService.analyzeGoals(job.user.goals);
+      // Generate AI analysis with user context (fallback for legacy queue)
+      const userContext = job.user.currentRole ? {
+        currentRole: job.user.currentRole,
+        teamSize: job.user.teamSize,
+        industry: job.user.industry,
+        yearsInLeadership: job.user.yearsInLeadership,
+        workEnvironment: job.user.workEnvironment,
+        organizationSize: job.user.organizationSize,
+        leadershipChallenges: job.user.leadershipChallenges
+      } : undefined;
+      const goalAnalysis = await openaiService.analyzeGoals(job.user.goals, userContext);
       
       // Log email history first
       const emailRecord = await storage.logEmailHistory({

@@ -203,8 +203,17 @@ class RedisEmailQueue {
 
   private async processWelcomeEmail(data: WelcomeEmailJob): Promise<void> {
     try {
-      // Generate AI analysis
-      const goalAnalysis = await openaiService.analyzeGoals(data.user.goals);
+      // Generate AI analysis with user context
+      const userContext = {
+        currentRole: data.user.currentRole,
+        teamSize: data.user.teamSize,
+        industry: data.user.industry,
+        yearsInLeadership: data.user.yearsInLeadership,
+        workEnvironment: data.user.workEnvironment,
+        organizationSize: data.user.organizationSize,
+        leadershipChallenges: data.user.leadershipChallenges
+      };
+      const goalAnalysis = await openaiService.analyzeGoals(data.user.goals, userContext);
       
       // Log email history first
       const emailRecord = await storage.logEmailHistory({
@@ -241,12 +250,24 @@ class RedisEmailQueue {
 
   private async processWeeklyEmail(data: WeeklyEmailJob): Promise<void> {
     try {
-      // Generate weekly content
+      // Build user context for weekly content
+      const userContext = {
+        currentRole: data.user.currentRole,
+        teamSize: data.user.teamSize,
+        industry: data.user.industry,
+        yearsInLeadership: data.user.yearsInLeadership,
+        workEnvironment: data.user.workEnvironment,
+        organizationSize: data.user.organizationSize,
+        leadershipChallenges: data.user.leadershipChallenges
+      };
+      
+      // Generate weekly content with context
       const weeklyContent = await openaiService.generateWeeklyContent(
         data.user.goals.join(', '),
         data.weekNumber,
         'previous action from week ' + (data.weekNumber - 1),
-        'good'
+        'good',
+        userContext
       );
 
       const subject = await openaiService.generateSubjectLine(data.weekNumber, weeklyContent.actionItem);
