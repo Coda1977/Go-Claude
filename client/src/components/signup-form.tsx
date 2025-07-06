@@ -98,120 +98,114 @@ const organizationSizeOptions = [
 ];
 
 const commonChallenges = [
-  "Giving constructive feedback",
-  "Having difficult conversations",
-  "Delegating effectively", 
+  "Effective communication with team members",
+  "Delegating tasks and responsibilities",
   "Managing up to senior leadership",
-  "Building team engagement",
-  "Leading through change",
-  "Developing others",
-  "Strategic thinking and planning",
+  "Conflict resolution and difficult conversations",
+  "Setting clear expectations and accountability",
+  "Building team culture and engagement",
+  "Strategic thinking and long-term planning",
+  "Performance management and feedback",
+  "Managing change and uncertainty",
+  "Work-life balance and burnout prevention",
   "Cross-functional collaboration",
-  "Remote/hybrid team management"
+  "Hiring and talent development"
 ];
 
 export function SignupForm() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedChallenges, setSelectedChallenges] = useState<string[]>([]);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<SignupForm>({
+  const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       email: "",
       timezone: "",
-      goals: [],
+      goals: [""],
       currentRole: undefined,
       teamSize: undefined,
       industry: undefined,
-      yearsInLeadership: 1,
+      yearsInLeadership: 0,
       workEnvironment: undefined,
       organizationSize: undefined,
-      leadershipChallenges: [],
+      leadershipChallenges: []
     },
+    mode: "onChange"
   });
 
-  const [goalInputs, setGoalInputs] = useState([""]);
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = form;
 
+  const watchedValues = watch();
+
+  // Navigation functions
+  const canProceedToStep2 = () => {
+    return watchedValues.email && 
+           watchedValues.timezone && 
+           watchedValues.currentRole && 
+           watchedValues.teamSize &&
+           watchedValues.industry &&
+           watchedValues.yearsInLeadership !== undefined &&
+           watchedValues.workEnvironment;
+  };
+
+  const canProceedToStep3 = () => {
+    return canProceedToStep2();
+  };
+
+  // Goal management
   const addGoal = () => {
-    if (goalInputs.length < 3) {
-      setGoalInputs([...goalInputs, ""]);
+    if (watchedValues.goals && watchedValues.goals.length < 3) {
+      setValue("goals", [...watchedValues.goals, ""]);
     }
   };
 
   const removeGoal = (index: number) => {
-    if (goalInputs.length > 1) {
-      const newGoals = goalInputs.filter((_, i) => i !== index);
-      setGoalInputs(newGoals);
-      setValue("goals", newGoals.filter(goal => goal.trim() !== ""));
+    if (watchedValues.goals && watchedValues.goals.length > 1) {
+      const newGoals = watchedValues.goals.filter((_, i) => i !== index);
+      setValue("goals", newGoals);
     }
   };
 
   const updateGoal = (index: number, value: string) => {
-    const newGoals = [...goalInputs];
-    newGoals[index] = value;
-    setGoalInputs(newGoals);
-    setValue("goals", newGoals.filter(goal => goal.trim() !== ""));
-  };
-
-  // Auto-detect timezone on component mount
-  useEffect(() => {
-    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const matchingTimezone = timezones.find(tz => tz.value === detectedTimezone);
-    if (matchingTimezone) {
-      setValue("timezone", detectedTimezone);
+    if (watchedValues.goals) {
+      const newGoals = [...watchedValues.goals];
+      newGoals[index] = value;
+      setValue("goals", newGoals);
     }
-  }, [setValue]);
+  };
 
-  const selectedTimezone = watch("timezone");
-  const selectedRole = watch("currentRole");
-  const selectedTeamSize = watch("teamSize");
-  const selectedIndustry = watch("industry");
-  const selectedWorkEnvironment = watch("workEnvironment");
-  const selectedOrgSize = watch("organizationSize");
-  const yearsInLeadership = watch("yearsInLeadership");
-
+  // Challenge management
   const toggleChallenge = (challenge: string) => {
-    const newChallenges = selectedChallenges.includes(challenge)
-      ? selectedChallenges.filter(c => c !== challenge)
-      : [...selectedChallenges, challenge];
-    setSelectedChallenges(newChallenges);
-    setValue("leadershipChallenges", newChallenges);
-  };
-
-  const canProceedToStep2 = () => {
-    return watch("email") && watch("currentRole") && watch("teamSize") && watch("industry");
-  };
-
-  const canProceedToStep3 = () => {
-    return watch("yearsInLeadership") && watch("workEnvironment") && watch("timezone");
+    const current = watchedValues.leadershipChallenges || [];
+    const isSelected = current.includes(challenge);
+    
+    if (isSelected) {
+      setValue("leadershipChallenges", current.filter(c => c !== challenge));
+    } else {
+      setValue("leadershipChallenges", [...current, challenge]);
+    }
   };
 
   const onSubmit = async (data: SignupForm) => {
     setIsSubmitting(true);
-
     try {
-      await apiRequest("POST", "/api/signup", data);
-      
-      toast({
-        title: "Welcome to Go Leadership!",
-        description: "Your personalized coaching journey has begun!",
+      await apiRequest("/api/users", {
+        method: "POST",
+        body: JSON.stringify(data),
       });
-      
-      // Redirect to success page
+
+      toast({
+        title: "Welcome aboard!",
+        description: "Your account has been created successfully. You'll receive your first coaching email within 24 hours.",
+      });
+
       setLocation("/success");
     } catch (error: any) {
       toast({
-        title: "Registration failed",
-        description: error.message || "An error occurred during registration. Please try again.",
+        title: "Signup failed",
+        description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -219,57 +213,50 @@ export function SignupForm() {
     }
   };
 
+  const steps = [
+    { step: 1, title: "Basic Info & Role", icon: "👤" },
+    { step: 2, title: "Experience", icon: "💼" },
+    { step: 3, title: "Goals & Challenges", icon: "🎯" }
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Enhanced Progress Indicator */}
+      {/* Progress Indicator */}
       <div className="flex items-center justify-center space-x-2 mb-12">
-        {[
-          { step: 1, label: "Context" },
-          { step: 2, label: "Experience" },
-          { step: 3, label: "Goals" }
-        ].map((item, index) => (
+        {steps.map((item, index) => (
           <div key={item.step} className="flex items-center">
             <div className="flex flex-col items-center">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  item.step <= currentStep
-                    ? 'bg-accent-blue text-white shadow-lg'
-                    : item.step === currentStep + 1
-                    ? 'bg-accent-yellow text-text-primary shadow-md'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
+                className={`
+                  w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300
+                  ${currentStep >= item.step 
+                    ? 'bg-accent-blue text-white shadow-lg scale-110' 
+                    : 'bg-gray-100 text-gray-400'
+                  }
+                `}
                 style={{
-                  backgroundColor: item.step <= currentStep ? 'var(--accent-blue)' : 
-                                   item.step === currentStep + 1 ? 'var(--accent-yellow)' : undefined,
-                  color: item.step <= currentStep ? 'white' : 
-                         item.step === currentStep + 1 ? 'var(--text-primary)' : undefined
+                  backgroundColor: currentStep >= item.step ? 'var(--accent-blue)' : undefined,
+                  color: currentStep >= item.step ? 'white' : undefined
                 }}
               >
-                {item.step <= currentStep ? (
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  item.step
-                )}
+                {item.step}
               </div>
-              <span className={`text-xs font-medium mt-2 transition-colors duration-300 ${
-                item.step <= currentStep ? 'text-accent-blue' : 'text-gray-500'
-              }`} style={{
-                color: item.step <= currentStep ? 'var(--accent-blue)' : undefined
-              }}>
-                {item.label}
+              <span 
+                className={`mt-2 text-xs font-medium transition-colors duration-300 ${
+                  currentStep >= item.step ? 'text-accent-blue' : 'text-gray-400'
+                }`}
+                style={{ color: currentStep >= item.step ? 'var(--accent-blue)' : undefined }}
+              >
+                {item.title}
               </span>
             </div>
-            {index < 2 && (
+            {index < steps.length - 1 && (
               <div className="flex items-center mx-4">
                 <div
-                  className={`h-0.5 w-16 transition-all duration-500 ${
-                    item.step < currentStep ? 'bg-accent-blue' : 'bg-gray-200'
+                  className={`h-0.5 w-8 transition-colors duration-300 ${
+                    currentStep > item.step ? 'bg-accent-blue' : 'bg-gray-200'
                   }`}
-                  style={{
-                    backgroundColor: item.step < currentStep ? 'var(--accent-blue)' : undefined
-                  }}
+                  style={{ backgroundColor: currentStep > item.step ? 'var(--accent-blue)' : undefined }}
                 />
               </div>
             )}
@@ -287,144 +274,193 @@ export function SignupForm() {
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h3 className="text-card mb-3" style={{ color: 'var(--text-primary)' }}>Tell us about your leadership context</h3>
-              <p className="text-body max-w-md mx-auto">This helps us personalize your coaching experience to your specific role and situation</p>
+              <h3 className="text-card mb-3" style={{ color: 'var(--text-primary)' }}>Let's get to know you</h3>
+              <p className="text-body max-w-md mx-auto">We'll personalize your leadership coaching based on your role and experience</p>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="email" className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Email Address</Label>
+                <Label htmlFor="email" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Email Address
+                </Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
                   {...register("email")}
-                  className={`h-14 text-base rounded-xl border-2 transition-all duration-200 ${
-                    errors.email 
-                      ? "border-red-400 focus:border-red-500" 
-                      : "border-gray-200 focus:border-accent-blue hover:border-gray-300"
-                  }`}
+                  type="email"
+                  placeholder="your.email@company.com"
+                  className="bg-white border-gray-200 focus:border-accent-blue focus:ring-accent-blue"
+                  style={{
+                    '--tw-ring-color': 'var(--accent-blue)',
+                    borderColor: errors.email ? 'var(--error-color)' : undefined
+                  } as any}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.email.message}
-                  </p>
+                  <p className="text-sm text-red-600">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-3">
-                <Label className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Current Role Level</Label>
-                <Select value={selectedRole} onValueChange={(value) => setValue("currentRole", value as any)}>
-                  <SelectTrigger className={`h-14 text-base rounded-xl border-2 transition-all duration-200 ${
-                    errors.currentRole 
-                      ? "border-red-400 focus:border-red-500" 
-                      : "border-gray-200 focus:border-accent-blue hover:border-gray-300"
-                  }`}>
-                    <SelectValue placeholder="Select your current role level" />
+                <Label htmlFor="timezone" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Timezone
+                </Label>
+                <Select value={watchedValues.timezone} onValueChange={(value) => setValue("timezone", value)}>
+                  <SelectTrigger className="bg-white border-gray-200">
+                    <SelectValue placeholder="Select your timezone" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-2 shadow-xl">
-                    {roleOptions.map((role) => (
-                      <SelectItem key={role.value} value={role.value} className="py-4 px-4 hover:bg-gray-50">
+                  <SelectContent>
+                    {timezones.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.timezone && (
+                  <p className="text-sm text-red-600">{errors.timezone.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    Current Role Level
+                  </Label>
+                  <Select value={watchedValues.currentRole} onValueChange={(value) => setValue("currentRole", value as any)}>
+                    <SelectTrigger className="bg-white border-gray-200">
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          <div>
+                            <div className="font-medium">{role.label}</div>
+                            <div className="text-xs text-gray-500">{role.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.currentRole && (
+                    <p className="text-sm text-red-600">{errors.currentRole.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    Team Size
+                  </Label>
+                  <Select value={watchedValues.teamSize} onValueChange={(value) => setValue("teamSize", value as any)}>
+                    <SelectTrigger className="bg-white border-gray-200">
+                      <SelectValue placeholder="Select team size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamSizeOptions.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>
+                          <div>
+                            <div className="font-medium">{size.label}</div>
+                            <div className="text-xs text-gray-500">{size.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.teamSize && (
+                    <p className="text-sm text-red-600">{errors.teamSize.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    Industry
+                  </Label>
+                  <Select value={watchedValues.industry} onValueChange={(value) => setValue("industry", value as any)}>
+                    <SelectTrigger className="bg-white border-gray-200">
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {industryOptions.map((industry) => (
+                        <SelectItem key={industry.value} value={industry.value}>
+                          <div>
+                            <div className="font-medium">{industry.label}</div>
+                            <div className="text-xs text-gray-500">{industry.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.industry && (
+                    <p className="text-sm text-red-600">{errors.industry.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="yearsInLeadership" className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    Years in Leadership
+                  </Label>
+                  <Input
+                    {...register("yearsInLeadership", { valueAsNumber: true })}
+                    type="number"
+                    min="0"
+                    max="50"
+                    placeholder="3"
+                    className="bg-white border-gray-200"
+                  />
+                  {errors.yearsInLeadership && (
+                    <p className="text-sm text-red-600">{errors.yearsInLeadership.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Work Environment
+                </Label>
+                <Select value={watchedValues.workEnvironment} onValueChange={(value) => setValue("workEnvironment", value as any)}>
+                  <SelectTrigger className="bg-white border-gray-200">
+                    <SelectValue placeholder="Select work environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workEnvironmentOptions.map((env) => (
+                      <SelectItem key={env.value} value={env.value}>
                         <div>
-                          <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{role.label}</div>
-                          <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{role.description}</div>
+                          <div className="font-medium">{env.label}</div>
+                          <div className="text-xs text-gray-500">{env.description}</div>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.currentRole && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.currentRole.message}
-                  </p>
+                {errors.workEnvironment && (
+                  <p className="text-sm text-red-600">{errors.workEnvironment.message}</p>
                 )}
               </div>
 
               <div className="space-y-3">
-                <Label className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Team Size</Label>
-                <Select value={selectedTeamSize} onValueChange={(value) => setValue("teamSize", value as any)}>
-                  <SelectTrigger className={`h-14 text-base rounded-xl border-2 transition-all duration-200 ${
-                    errors.teamSize 
-                      ? "border-red-400 focus:border-red-500" 
-                      : "border-gray-200 focus:border-accent-blue hover:border-gray-300"
-                  }`}>
-                    <SelectValue placeholder="How many people do you lead?" />
+                <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Organization Size (Optional)
+                </Label>
+                <Select value={watchedValues.organizationSize} onValueChange={(value) => setValue("organizationSize", value as any)}>
+                  <SelectTrigger className="bg-white border-gray-200">
+                    <SelectValue placeholder="Select organization size" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-2 shadow-xl">
-                    {teamSizeOptions.map((size) => (
-                      <SelectItem key={size.value} value={size.value} className="py-4 px-4 hover:bg-gray-50">
-                        <div>
-                          <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{size.label}</div>
-                          <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{size.description}</div>
-                        </div>
-                      </SelectItem>
+                  <SelectContent>
+                    {organizationSizeOptions.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>{size.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.teamSize && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.teamSize.message}
-                  </p>
-                )}
               </div>
+            </div>
 
-              <div className="space-y-3">
-                <Label className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Industry</Label>
-                <Select value={selectedIndustry} onValueChange={(value) => setValue("industry", value as any)}>
-                  <SelectTrigger className={`h-14 text-base rounded-xl border-2 transition-all duration-200 ${
-                    errors.industry 
-                      ? "border-red-400 focus:border-red-500" 
-                      : "border-gray-200 focus:border-accent-blue hover:border-gray-300"
-                  }`}>
-                    <SelectValue placeholder="Select your industry" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-2 shadow-xl">
-                    {industryOptions.map((industry) => (
-                      <SelectItem key={industry.value} value={industry.value} className="py-4 px-4 hover:bg-gray-50">
-                        <div>
-                          <div className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>{industry.label}</div>
-                          <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{industry.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.industry && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.industry.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  disabled={!canProceedToStep2()}
-                  className={`btn-primary w-full transition-all duration-300 ${
-                    !canProceedToStep2() 
-                      ? 'opacity-50 cursor-not-allowed transform-none' 
-                      : 'hover:transform hover:scale-105'
-                  }`}
-                >
-                  Continue to Experience & Environment
-                  <svg className="w-5 h-5 ml-2 inline" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+            <div className="flex justify-end mt-8">
+              <Button 
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                disabled={!canProceedToStep2()}
+                className="px-8"
+                style={{ backgroundColor: 'var(--accent-blue)' }}
+              >
+                Continue to Experience
+              </Button>
             </div>
           </div>
         )}
@@ -443,90 +479,47 @@ export function SignupForm() {
             </div>
 
             <div className="space-y-6">
-
-            <div className="space-y-2">
-              <Label htmlFor="yearsInLeadership">Years in Leadership</Label>
-              <Input
-                id="yearsInLeadership"
-                type="number"
-                min="0"
-                max="50"
-                placeholder="Years of leadership experience"
-                {...register("yearsInLeadership", { valueAsNumber: true })}
-                className={errors.yearsInLeadership ? "border-red-500" : ""}
-              />
-              {errors.yearsInLeadership && (
-                <p className="text-sm text-red-500">{errors.yearsInLeadership.message}</p>
-              )}
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h4 className="font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Experience Summary</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Role:</span> 
+                    <span className="ml-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {roleOptions.find(r => r.value === watchedValues.currentRole)?.label || 'Not selected'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Team Size:</span> 
+                    <span className="ml-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {teamSizeOptions.find(t => t.value === watchedValues.teamSize)?.label || 'Not selected'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Industry:</span> 
+                    <span className="ml-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {industryOptions.find(i => i.value === watchedValues.industry)?.label || 'Not selected'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Experience:</span> 
+                    <span className="ml-2 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {watchedValues.yearsInLeadership} years
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Work Environment</Label>
-              <Select value={selectedWorkEnvironment} onValueChange={(value) => setValue("workEnvironment", value as any)}>
-                <SelectTrigger className={errors.workEnvironment ? "border-red-500" : ""}>
-                  <SelectValue placeholder="How does your team work?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workEnvironmentOptions.map((env) => (
-                    <SelectItem key={env.value} value={env.value}>
-                      <div>
-                        <div className="font-medium">{env.label}</div>
-                        <div className="text-sm text-gray-500">{env.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.workEnvironment && (
-                <p className="text-sm text-red-500">{errors.workEnvironment.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Organization Size (Optional)</Label>
-              <Select value={selectedOrgSize} onValueChange={(value) => setValue("organizationSize", value as any)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {organizationSizeOptions.map((size) => (
-                    <SelectItem key={size.value} value={size.value}>
-                      {size.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Select value={selectedTimezone} onValueChange={(value) => setValue("timezone", value)}>
-                <SelectTrigger className={errors.timezone ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select your timezone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timezones.map((timezone) => (
-                    <SelectItem key={timezone.value} value={timezone.value}>
-                      {timezone.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.timezone && (
-                <p className="text-sm text-red-500">{errors.timezone.message}</p>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <Button
+            <div className="flex justify-between mt-8">
+              <Button 
                 type="button"
-                variant="outline"
                 onClick={() => setCurrentStep(1)}
-                className="flex-1"
+                variant="outline"
+                className="flex-1 mr-4"
               >
-                Back
+                Back to Step 1
               </Button>
-              <Button
+              <Button 
                 type="button"
                 onClick={() => setCurrentStep(3)}
                 disabled={!canProceedToStep3()}
@@ -548,159 +541,99 @@ export function SignupForm() {
                 </svg>
               </div>
               <h3 className="text-card mb-3" style={{ color: 'var(--text-primary)' }}>Your leadership goals & challenges</h3>
-              <p className="text-body max-w-md mx-auto">What do you want to achieve in the next 12 weeks?</p>
+              <p className="text-body max-w-md mx-auto">Define what you want to achieve and areas where you need support</p>
             </div>
 
             <div className="space-y-8">
-
-            <div className="space-y-2">
-              <Label htmlFor="goals">Leadership Goals (1-3 specific goals)</Label>
-              <div className="space-y-3">
-                {goalInputs.map((goal, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Input
-                      placeholder={`Goal ${index + 1}: e.g., "Give more constructive feedback to my team"`}
-                      value={goal}
-                      onChange={(e) => updateGoal(index, e.target.value)}
-                      className={errors.goals ? "border-red-500" : ""}
-                    />
-                    {goalInputs.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeGoal(index)}
-                        className="shrink-0"
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {goalInputs.length < 3 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addGoal}
-                    className="w-full"
-                  >
-                    Add Another Goal
-                  </Button>
-                )}
-              </div>
-              {errors.goals && (
-                <p className="text-sm text-red-500">{errors.goals.message}</p>
-              )}
-            </div>
-
               <div className="space-y-4">
-                <div>
-                  <Label className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Common Leadership Challenges</Label>
-                  <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-                    Select any challenges you're currently facing. This helps us prioritize relevant coaching content.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {commonChallenges.map((challenge) => (
-                    <button
-                      key={challenge}
-                      type="button"
-                      onClick={() => toggleChallenge(challenge)}
-                      className={`group p-4 text-left rounded-xl border-2 transition-all duration-200 ${
-                        selectedChallenges.includes(challenge)
-                          ? 'border-accent-blue bg-blue-50 shadow-md transform scale-[1.02]'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50'
-                      }`}
-                      style={{
-                        borderColor: selectedChallenges.includes(challenge) ? 'var(--accent-blue)' : undefined
-                      }}
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Leadership Goals (1-3)
+                  </Label>
+                  {watchedValues.goals && watchedValues.goals.length < 3 && (
+                    <Button 
+                      type="button" 
+                      onClick={addGoal}
+                      variant="outline"
+                      size="sm"
+                      className="text-accent-blue border-accent-blue hover:bg-accent-blue hover:text-white"
                     >
-                      <div className="flex items-start space-x-3">
-                        <div
-                          className={`w-5 h-5 rounded-md border-2 mt-0.5 flex items-center justify-center transition-all duration-200 ${
-                            selectedChallenges.includes(challenge)
-                              ? 'bg-accent-blue border-accent-blue'
-                              : 'border-gray-300 group-hover:border-gray-400'
-                          }`}
+                      + Add Goal
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {watchedValues.goals?.map((goal, index) => (
+                    <div key={index} className="flex gap-3">
+                      <div className="flex-1">
+                        <Textarea
+                          value={goal}
+                          onChange={(e) => updateGoal(index, e.target.value)}
+                          placeholder={`Goal ${index + 1}: e.g., "Improve my delegation skills to better empower my team"`}
+                          className="min-h-[80px] bg-white border-gray-200 focus:border-accent-blue focus:ring-accent-blue resize-none"
                           style={{
-                            backgroundColor: selectedChallenges.includes(challenge) ? 'var(--accent-blue)' : undefined,
-                            borderColor: selectedChallenges.includes(challenge) ? 'var(--accent-blue)' : undefined
-                          }}
-                        >
-                          {selectedChallenges.includes(challenge) && (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className={`text-sm font-medium transition-colors duration-200 ${
-                          selectedChallenges.includes(challenge) 
-                            ? 'text-accent-blue' 
-                            : 'text-gray-700 group-hover:text-gray-900'
-                        }`} style={{
-                          color: selectedChallenges.includes(challenge) ? 'var(--accent-blue)' : undefined
-                        }}>
-                          {challenge}
-                        </span>
+                            '--tw-ring-color': 'var(--accent-blue)'
+                          } as any}
+                        />
                       </div>
-                    </button>
+                      {watchedValues.goals && watchedValues.goals.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => removeGoal(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
                   ))}
                 </div>
-                {selectedChallenges.length > 0 && (
-                  <div className="mt-4 p-3 rounded-xl bg-accent-yellow bg-opacity-20 border border-accent-yellow border-opacity-30" style={{
-                    backgroundColor: 'rgba(255, 214, 10, 0.1)',
-                    borderColor: 'rgba(255, 214, 10, 0.3)'
-                  }}>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {selectedChallenges.length} challenge{selectedChallenges.length > 1 ? 's' : ''} selected - we'll prioritize these in your coaching
-                    </p>
-                  </div>
+                {errors.goals && (
+                  <p className="text-sm text-red-600">{errors.goals.message}</p>
                 )}
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="btn-secondary flex-1 transition-all duration-300 hover:transform hover:scale-105"
-                >
-                  <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                  </svg>
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`btn-primary flex-2 transition-all duration-300 relative overflow-hidden ${
-                    isSubmitting 
-                      ? 'opacity-90 cursor-wait' 
-                      : 'hover:transform hover:scale-105 hover:shadow-lg'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center">
-                      <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="m12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6z"></path>
-                      </svg>
-                      Starting Your Journey...
+              <div className="space-y-4">
+                <Label className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Leadership Challenges (Optional)
+                </Label>
+                <p className="text-sm text-gray-600">Select areas where you'd like focused coaching support</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {commonChallenges.map((challenge) => (
+                    <div
+                      key={challenge}
+                      onClick={() => toggleChallenge(challenge)}
+                      className={`
+                        p-3 rounded-lg border cursor-pointer transition-all duration-200
+                        ${(watchedValues.leadershipChallenges || []).includes(challenge)
+                          ? 'border-accent-blue bg-blue-50 text-accent-blue'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }
+                      `}
+                      style={{
+                        borderColor: (watchedValues.leadershipChallenges || []).includes(challenge) ? 'var(--accent-blue)' : undefined,
+                        backgroundColor: (watchedValues.leadershipChallenges || []).includes(challenge) ? 'rgba(59, 130, 246, 0.1)' : undefined,
+                        color: (watchedValues.leadershipChallenges || []).includes(challenge) ? 'var(--accent-blue)' : undefined
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{challenge}</span>
+                        {(watchedValues.leadershipChallenges || []).includes(challenge) && (
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      Start My Leadership Journey
-                      <svg className="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-6 p-4 rounded-xl bg-gray-50 border-l-4 border-accent-blue" style={{
-                borderLeftColor: 'var(--accent-blue)'
-              }}>
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                 <div className="flex items-start space-x-3">
                   <svg className="w-5 h-5 mt-0.5 text-accent-blue" style={{ color: 'var(--accent-blue)' }} fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -715,6 +648,25 @@ export function SignupForm() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <Button 
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                variant="outline"
+                className="flex-1 mr-4"
+              >
+                Back to Experience
+              </Button>
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1"
+                style={{ backgroundColor: 'var(--accent-blue)' }}
+              >
+                {isSubmitting ? 'Creating Account...' : 'Start My Leadership Journey'}
+              </Button>
             </div>
           </div>
         )}

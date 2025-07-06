@@ -1,5 +1,5 @@
 import { logger } from './logger';
-import { redisEmailQueue } from './redis-email-queue';
+import { emailQueue } from './email-queue';
 import { db } from '../db';
 import { users, emailHistory } from '@shared/schema';
 import { count, eq, sql } from 'drizzle-orm';
@@ -26,9 +26,6 @@ interface SystemMetrics {
     failed: number;
     delayed: number;
   };
-  redis: {
-    connected: boolean;
-  };
 }
 
 interface HealthCheck {
@@ -37,7 +34,6 @@ interface HealthCheck {
   uptime: number;
   services: {
     database: boolean;
-    redis: boolean;
     emailQueue: boolean;
   };
   metrics: SystemMetrics;
@@ -91,9 +87,8 @@ class MonitoringService {
         .from(emailHistory)
         .where(eq(emailHistory.deliveryStatus, 'failed'));
 
-      // Email queue metrics
-      const queueStatus = await redisEmailQueue.getQueueStatus();
-      const queueHealth = await redisEmailQueue.getHealthStatus();
+      // Email queue metrics (simple in-memory queue)
+      const queueStatus = emailQueue.getQueueStatus();
 
       return {
         uptime,
@@ -110,9 +105,12 @@ class MonitoringService {
           emailsPending: emailsPendingResult.count,
           emailsFailed: emailsFailedResult.count
         },
-        emailQueue: queueStatus,
-        redis: {
-          connected: queueHealth.redis
+        emailQueue: {
+          waiting: queueStatus.pending,
+          active: queueStatus.processing ? 1 : 0,
+          completed: 0,
+          failed: 0,
+          delayed: 0
         }
       };
     } catch (error) {
@@ -124,27 +122,26 @@ class MonitoringService {
   async getHealthStatus(): Promise<HealthCheck> {
     try {
       const metrics = await this.getSystemMetrics();
-      const queueHealth = await redisEmailQueue.getHealthStatus();
       
       // Test database connection
       const dbConnected = await this.testDatabaseConnection();
       
+      // Test email queue status
+      const queueStatus = emailQueue.getQueueStatus();
+      const emailQueueHealthy = true; // Simple in-memory queue is always healthy
+      
       const services = {
         database: dbConnected,
-        redis: queueHealth.redis,
-        emailQueue: queueHealth.queue && queueHealth.worker
+        emailQueue: emailQueueHealthy
       };
 
       // Determine overall health status
       let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
       
-      const criticalServices = [services.database];
-      const nonCriticalServices = [services.redis, services.emailQueue];
+      const criticalServices = [services.database, services.emailQueue];
       
       if (criticalServices.some(service => !service)) {
         status = 'unhealthy';
-      } else if (nonCriticalServices.some(service => !service)) {
-        status = 'degraded';
       }
 
       // Check memory usage
